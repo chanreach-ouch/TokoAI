@@ -1,32 +1,25 @@
-from fastapi import APIRouter, Request, HTTPException
-from app.core.security import verify_tiktok_signature
+from fastapi import APIRouter, Request, Header, HTTPException
+from app.core.security import verify_tiktok_hmac
 from arq import create_pool
 from arq.connections import RedisSettings
-import os
-import json
+from app.config import settings
 
 router = APIRouter()
 
-async def get_arq_pool():
-    redis_settings = RedisSettings.from_dsn(os.getenv("REDIS_URL", "redis://localhost:6379/0"))
-    return await create_pool(redis_settings)
-
 @router.post("/webhook")
-async def tiktok_webhook(request: Request):
-    signature = request.headers.get("X-TikTok-Signature")
+async def tiktok_webhook(
+    request: Request,
+    x_tiktok_signature: str = Header(None)
+):
+    if not x_tiktok_signature:
+        raise HTTPException(status_code=401, detail="Missing signature")
+        
+    await verify_tiktok_hmac(request, x_tiktok_signature)
+    
     body = await request.body()
     
-    if not verify_tiktok_signature(signature, body):
-        raise HTTPException(status_code=401, detail="Invalid signature")
-        
-    try:
-        payload = json.loads(body)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
-    
-    message_id = payload.get("message_id", "unknown")
-    
-    pool = await get_arq_pool()
-    await pool.enqueue_job("process_tiktok_message", message_id, payload)
+    redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+    arq_pool = await create_pool(redis_settings)
+    await arq_pool.enqueue_job('process_tiktok_message', body)
     
     return {"status": "ok"}

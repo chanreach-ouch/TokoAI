@@ -6,14 +6,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: tiktok_agent
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d tiktok_agent"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tiktok_shop
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -26,29 +21,23 @@ services:
 
   web:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/tiktok_agent
-      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - postgres
+      - redis
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   worker:
     build: .
-    command: arq app.worker.worker.WorkerSettings
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@postgres:5432/tiktok_agent
-      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - postgres
+      - redis
+    command: arq app.worker.worker.WorkerSettings
 
 volumes:
   postgres_data:

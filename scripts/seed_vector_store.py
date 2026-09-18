@@ -1,78 +1,88 @@
 import asyncio
-import csv
-import os
 from sqlalchemy import text
-from app.core.db import engine, Base
-from app.models.user import User
-from app.models.product import Product
-from app.models.order import Order
-from app.models.conversation import Conversation
+from app.core.db import engine, AsyncSessionLocal
+from app.models.base import Base
+from app.models import User, Product, Order, Conversation
+from app.config import settings
+
+# Since google-genai is used to generate embeddings
 from google import genai
-from google.genai import types
+import os
 
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-async def main():
-    logger.info("Initializing vector store...")
-    
-    # Run migrations and setup pgvector
+inventory = [
+    {
+        "sku": "KZ-CASTOR-BASS",
+        "name_en": "KZ Castor Bass Version",
+        "name_kh": "កាស KZ Castor ជំនាន់បាស",
+        "aliases": ["castor bass", "kz bass", "កាសបាស"],
+        "description": "dual dynamic driver, heavy sub-bass",
+        "price_usd": 14.00,
+        "stock_qty": 50,
+    },
+    {
+        "sku": "KZ-CASTOR-HARMAN",
+        "name_en": "KZ Castor Harman Target",
+        "name_kh": "កាស KZ Castor ជំនាន់ Harman",
+        "aliases": ["castor harman", "kz harman", "កាស harman"],
+        "description": "balanced vocal and clarity",
+        "price_usd": 14.00,
+        "stock_qty": 40,
+    },
+    {
+        "sku": "KZ-CASTOR-PRO",
+        "name_en": "KZ Castor Pro",
+        "name_kh": "កាស KZ Castor Pro",
+        "aliases": ["castor pro", "kz pro", "កាសប្រូ"],
+        "description": "upgraded driver, clean treble, silver-plated cable",
+        "price_usd": 19.00,
+        "stock_qty": 20,
+    },
+    {
+        "sku": "KZ-TYPEC-DAC",
+        "name_en": "KZ Type-C Hi-Res DAC Cable",
+        "name_kh": "ខ្សែប្រភេទ C មាន DAC",
+        "aliases": ["type c cable", "dac cable", "ខ្សែ c"],
+        "description": "digital type-c adapter",
+        "price_usd": 6.00,
+        "stock_qty": 100,
+    },
+]
+
+async def seed():
     async with engine.begin() as conn:
-        logger.info("Creating pgvector extension...")
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-        logger.info("Creating tables...")
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-        
-    api_key = os.getenv("GEMINI_API_KEY", "dummy_key")
-    if api_key == "dummy_key":
-        logger.warning("No GEMINI_API_KEY provided. Using dummy vector embeddings for testing.")
-        client = None
-    else:
-        client = genai.Client(api_key=api_key)
 
-    products = [
-        {"sku": "KZ-CASTOR-BASS", "name_en": "KZ Castor Bass Version", "name_kh": "កាស KZ Castor បាស", "price_usd": 14.0, "stock_qty": 100, "aliases": ["castor bass", "bass version"]},
-        {"sku": "KZ-CASTOR-HARMAN", "name_en": "KZ Castor Harman", "name_kh": "កាស KZ Castor ធម្មតា", "price_usd": 14.0, "stock_qty": 50, "aliases": ["castor harman"]},
-        {"sku": "KZ-CASTOR-PRO", "name_en": "KZ Castor Pro", "name_kh": "កាស KZ Castor Pro", "price_usd": 19.0, "stock_qty": 30, "aliases": ["castor pro"]},
-        {"sku": "KZ-TYPEC-DAC", "name_en": "KZ Type-C DAC Cable", "name_kh": "ខ្សែ Type-C DAC KZ", "price_usd": 6.0, "stock_qty": 200, "aliases": ["dac cable", "type c cord"]}
-    ]
+    async with AsyncSessionLocal() as session:
+        for item in inventory:
+            # Generate embedding using text-embedding-004
+            text_to_embed = f"{item['name_en']} {item['name_kh']} {item['description']}"
+            try:
+                response = client.models.embed_content(
+                    model="text-embedding-004",
+                    contents=text_to_embed,
+                )
+                embedding = response.embeddings[0].values
+            except Exception as e:
+                print(f"Failed to generate embedding for {item['sku']}: {e}")
+                # Mock embedding for test if it fails
+                embedding = [0.0] * 768
 
-    async with engine.begin() as conn:
-        for p in products:
-            text_to_embed = f"{p['name_en']} {p['name_kh']} {' '.join(p['aliases'])}"
-            embedding = [0.0] * 768
-            
-            if client:
-                try:
-                    response = client.models.embed_content(
-                        model='text-embedding-004',
-                        contents=text_to_embed,
-                        config=types.EmbedContentConfig(output_dimensionality=768)
-                    )
-                    embedding = response.embeddings[0].values
-                except Exception as e:
-                    logger.error(f"Error getting embedding for {p['sku']}: {e}")
-            
-            await conn.execute(
-                text("""
-                    INSERT INTO products (sku, name_en, name_kh, aliases, price_usd, stock_qty, embedding)
-                    VALUES (:sku, :name_en, :name_kh, :aliases, :price_usd, :stock_qty, :embedding)
-                """),
-                {
-                    "sku": p["sku"],
-                    "name_en": p["name_en"],
-                    "name_kh": p["name_kh"],
-                    "aliases": str(p["aliases"]).replace("'", '"'),
-                    "price_usd": p["price_usd"],
-                    "stock_qty": p["stock_qty"],
-                    "embedding": embedding
-                }
+            product = Product(
+                sku=item["sku"],
+                name_en=item["name_en"],
+                name_kh=item["name_kh"],
+                aliases=item["aliases"],
+                description=item["description"],
+                price_usd=item["price_usd"],
+                stock_qty=item["stock_qty"],
+                embedding=embedding,
             )
-            logger.info(f"Seeded product: {p['sku']}")
-            
-    logger.info("Database seeding complete!")
+            session.add(product)
+        await session.commit()
+    print("Seed completed successfully.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(seed())

@@ -1,10 +1,14 @@
 import re
 
-def parse_address_and_phone(text_input: str) -> dict:
-    phone_pattern = r"(0[1-9]{2}\s?\d{3}\s?\d{3,4})"
-    phones = re.findall(phone_pattern, text_input)
+def parse_address_and_phone(text: str) -> dict:
+    phone_pattern = re.compile(r'(?:0|\+?855)(?:[1-9]\d{7,8})')
+    phones = phone_pattern.findall(text.replace(" ", "").replace("-", ""))
+    
+    address = text
+    for p in phones:
+        address = address.replace(p, "")
     
     return {
-        "phones": [p.replace(" ", "") for p in phones],
-        "raw_text": text_input
+        "phones": phones,
+        "address": address.strip()
     }

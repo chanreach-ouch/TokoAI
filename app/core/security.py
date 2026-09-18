@@ -1,17 +1,13 @@
 import hmac
 import hashlib
-import os
+from fastapi import Request, HTTPException
+from app.config import settings
 
-TIKTOK_APP_SECRET = os.getenv("TIKTOK_APP_SECRET", "dummy_secret")
-
-def verify_tiktok_signature(signature: str, body: bytes) -> bool:
-    if not signature:
-        return False
+async def verify_tiktok_hmac(request: Request, x_tiktok_signature: str) -> bool:
+    body = await request.body()
+    secret = settings.TIKTOK_APP_SECRET.encode('utf-8')
+    expected_signature = hmac.new(secret, body, hashlib.sha256).hexdigest()
     
-    expected_mac = hmac.new(
-        TIKTOK_APP_SECRET.encode('utf-8'),
-        body,
-        hashlib.sha256
-    ).hexdigest()
-    
-    return hmac.compare_digest(expected_mac, signature)
+    if not hmac.compare_digest(expected_signature, x_tiktok_signature):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    return True

@@ -1,40 +1,45 @@
-from sqlalchemy import text
-from app.core.db import async_session_maker
 from google import genai
-from google.genai import types
-import os
-import logging
+from sqlalchemy import select
+from app.core.db import AsyncSessionLocal
+from app.models.product import Product
+from app.config import settings
+from app.agent.prompts import SYSTEM_PROMPT
 
-logger = logging.getLogger(__name__)
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-api_key = os.getenv("GEMINI_API_KEY", "dummy_key")
-client = genai.Client(api_key=api_key) if api_key != "dummy_key" else None
-
-async def query_products(query: str, limit: int = 3):
-    if not client:
-        return []
-
+async def retrieve_relevant_products(query: str, session, top_k=2):
     try:
         response = client.models.embed_content(
-            model='text-embedding-004',
+            model="text-embedding-004",
             contents=query,
-            config=types.EmbedContentConfig(output_dimensionality=768)
         )
         query_embedding = response.embeddings[0].values
+        
+        stmt = select(Product).order_by(Product.embedding.cosine_distance(query_embedding)).limit(top_k)
+        result = await session.execute(stmt)
+        return result.scalars().all()
     except Exception as e:
-        logger.error(f"Failed to embed query: {e}")
+        print(f"Embedding error: {e}")
         return []
 
-    async with async_session_maker() as session:
-        result = await session.execute(
-            text("""
-                SELECT sku, name_en, name_kh, price_usd, stock_qty,
-                       1 - (embedding <=> :embedding::vector) AS similarity
-                FROM products
-                ORDER BY embedding <=> :embedding::vector
-                LIMIT :limit
-            """),
-            {"embedding": str(query_embedding), "limit": limit}
-        )
+async def run_agent(sender_id: str, message_text: str, memory: list[str]) -> str:
+    async with AsyncSessionLocal() as session:
+        products = await retrieve_relevant_products(message_text, session)
         
-        return [dict(row._mapping) for row in result]
+        context = "Relevant Products:\n"
+        for p in products:
+            context += f"- {p.name_kh} (SKU: {p.sku}): ${p.price_usd} - {p.description} (Stock: {p.stock_qty})\n"
+            
+        history = "\n".join(reversed(memory))
+        
+        prompt = f"{SYSTEM_PROMPT}\n\nContext:\n{context}\n\nChat History:\n{history}\n\nUser: {message_text}\nAgent:"
+        
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            print(f"Gemini error: {e}")
+            return "សុំទោសបង ពេលនេះមានបញ្ហាបច្ចេកទេសបន្តិច។"

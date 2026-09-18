@@ -1,12 +1,12 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime
-from sqlalchemy.sql import func
-from app.core.db import Base
+from datetime import datetime, timezone
+from sqlalchemy import String, Integer, ForeignKey, DateTime
+from sqlalchemy.orm import Mapped, mapped_column
+from app.models.base import Base
 
 class Conversation(Base):
     __tablename__ = "conversations"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    state = Column(String, default="NEW")
-    history = Column(Text, default="[]")
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), default=func.now())
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False)
+    message_text: Mapped[str] = mapped_column(String, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

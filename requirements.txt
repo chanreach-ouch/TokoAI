@@ -10,5 +10,6 @@ httpx
 google-genai
 qrcode
 pillow
+crccheck
 pytest
 pytest-asyncio

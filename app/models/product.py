@@ -1,16 +1,17 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import String, Numeric, Integer
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
 from pgvector.sqlalchemy import Vector
-from app.core.db import Base
+from app.models.base import Base
 
 class Product(Base):
     __tablename__ = "products"
-
-    id = Column(Integer, primary_key=True, index=True)
-    sku = Column(String, unique=True, index=True, nullable=False)
-    name_en = Column(String, nullable=False)
-    name_kh = Column(String, nullable=False)
-    aliases = Column(JSONB, default=list)
-    price_usd = Column(Float, nullable=False)
-    stock_qty = Column(Integer, default=0)
-    embedding = Column(Vector(768))
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    sku: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    name_en: Mapped[str] = mapped_column(String, nullable=False)
+    name_kh: Mapped[str] = mapped_column(String, nullable=False)
+    aliases: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    price_usd: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    stock_qty: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=True)
