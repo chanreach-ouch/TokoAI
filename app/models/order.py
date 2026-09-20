@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Numeric, Integer, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
@@ -7,6 +8,7 @@ from app.models.base import Base
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    shop_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("shops.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     items: Mapped[dict] = mapped_column(JSONB, nullable=False)
     total_amount_usd: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)

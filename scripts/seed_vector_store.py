@@ -50,18 +50,38 @@ inventory = [
     },
 ]
 
+from app.models.shop import Shop
+
 async def seed():
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as session:
+        from sqlalchemy import select
+        # Check if dummy shop exists
+        result = await session.execute(select(Shop).where(Shop.tiktok_page_id == "test_tiktok_id"))
+        test_shop = result.scalar_one_or_none()
+        
+        if not test_shop:
+            test_shop = Shop(
+                tiktok_page_id="test_tiktok_id",
+                name="Audio Store KH",
+                bakong_merchant_id="seller@abaa"
+            )
+            session.add(test_shop)
+            await session.flush() # flush to get the UUID generated
+            
+        # Optional: delete old dummy products to avoid duplication
+        await session.execute(text("DELETE FROM products WHERE shop_id = :sid").bindparams(sid=test_shop.id))
+        await session.flush()
+
         for item in inventory:
-            # Generate embedding using text-embedding-004
+            # Generate embedding using gemini-embedding-2
             text_to_embed = f"{item['name_en']} {item['name_kh']} {item['description']}"
             try:
                 response = client.models.embed_content(
-                    model="text-embedding-004",
+                    model="gemini-embedding-2",
                     contents=text_to_embed,
                 )
                 embedding = response.embeddings[0].values
@@ -71,6 +91,7 @@ async def seed():
                 embedding = [0.0] * 768
 
             product = Product(
+                shop_id=test_shop.id,
                 sku=item["sku"],
                 name_en=item["name_en"],
                 name_kh=item["name_kh"],
@@ -82,7 +103,7 @@ async def seed():
             )
             session.add(product)
         await session.commit()
-    print("Seed completed successfully.")
+    print("Seed completed successfully. Default Shop created.")
 
 if __name__ == "__main__":
     asyncio.run(seed())

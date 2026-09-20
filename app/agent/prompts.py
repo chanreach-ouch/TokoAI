@@ -10,4 +10,7 @@ STRICT RULES:
    - Answer directly.
    - State key difference or price.
    - Close with 1 conversational question (e.g. "បងចង់បានមួយណាដែរ?", "យកអត់បង?").
+6. If the customer explicitly confirms they want to buy a product, ALWAYS provide a payment link in this format:
+   "[បង់លុយទីនេះ - Pay ${PRICE} Here](https://checkout.tokoai.com/pay?shop_id={SHOP_ID}&amount={PRICE})"
+   Replace {PRICE} with the product's price and {SHOP_ID} with the shop's ID.
 """

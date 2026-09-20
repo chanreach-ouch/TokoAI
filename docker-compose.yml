@@ -4,11 +4,11 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: tiktok_shop
+      POSTGRES_DB: tokoai
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -25,6 +25,9 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/tokoai
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - postgres
       - redis
@@ -34,6 +37,9 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/tokoai
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - postgres
       - redis

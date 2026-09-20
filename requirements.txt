@@ -13,3 +13,6 @@ pillow
 crccheck
 pytest
 pytest-asyncio
+python-multipart
+passlib[bcrypt]
+PyJWT
