@@ -38,5 +38,9 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not seller or not verify_password(req.password, seller.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
         
-    token = create_access_token({"sub": str(seller.id), "email": seller.email})
+    token = create_access_token({
+        "sub": str(seller.id), 
+        "email": seller.email,
+        "is_superadmin": seller.is_superadmin
+    })
     return {"access_token": token, "token_type": "bearer"}

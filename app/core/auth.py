@@ -1,22 +1,22 @@
 import jwt
 from datetime import datetime, timedelta, timezone
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev_secret_key_change_me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -38,4 +38,11 @@ async def get_current_seller(payload: dict = Depends(verify_token)):
     seller_id = payload.get("sub")
     if not seller_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
+    return seller_id
+
+async def get_superadmin(payload: dict = Depends(verify_token)):
+    seller_id = payload.get("sub")
+    is_admin = payload.get("is_superadmin", False)
+    if not seller_id or not is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized as superadmin")
     return seller_id
