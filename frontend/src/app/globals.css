@@ -4,56 +4,99 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Mapped to brand-mist #F5F7FB */
+    --background: 220 33% 97%;
+    /* Mapped to brand-ink #0A0E1A */
+    --foreground: 225 44% 7%;
+    
+    /* Mapped to brand-bone #FAFBFC */
+    --card: 210 33% 98%;
+    --card-foreground: 225 44% 7%;
+    
+    --popover: 210 33% 98%;
+    --popover-foreground: 225 44% 7%;
+    
+    /* Mapped to brand-pink #FF3B6B */
+    --primary: 345 100% 61%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 226 23% 92%;
+    --secondary-foreground: 225 44% 7%;
+    
+    /* Mapped to brand-muted #6B7280 */
+    --muted: 226 23% 92%;
+    --muted-foreground: 217 19% 46%;
+    
+    --accent: 226 23% 92%;
+    --accent-foreground: 225 44% 7%;
+    
+    /* Mapped to brand-pink #FF3B6B for destructive */
+    --destructive: 345 100% 61%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Mapped to brand-line #E6E8EF */
+    --border: 226 23% 92%;
+    --input: 226 23% 92%;
+    --ring: 345 100% 61%;
+    
+    --radius: 12px;
+    
+    --chart-1: 345 100% 61%; /* Pink */
+    --chart-2: 173 90% 50%; /* Cyan */
+    --chart-3: 217 19% 46%; /* Muted */
+    --chart-4: 345 100% 61%;
+    --chart-5: 173 90% 50%;
   }
 
+  /* Dark mode is disabled per the casual-professional light theme spec, but we include stubs to prevent crashes */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 225 44% 7%;
+    --foreground: 220 33% 97%;
+    --card: 222 36% 11%;
+    --card-foreground: 220 33% 97%;
+    --popover: 222 36% 11%;
+    --popover-foreground: 220 33% 97%;
+    --primary: 345 100% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 19% 27%;
+    --secondary-foreground: 220 33% 97%;
+    --muted: 217 19% 27%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 19% 27%;
+    --accent-foreground: 220 33% 97%;
+    --destructive: 345 100% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 19% 27%;
+    --input: 217 19% 27%;
+    --ring: 345 100% 61%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: #333;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #000;
+    color: #f4f4f5; /* zinc-100 */
+    font-family: 'Inter', 'Kantumruy Pro', sans-serif;
+  }
+}
+
+/* Custom Utilities for the Design System */
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-primary;
+  }
+  
+  /* Status dot pulse animation */
+  @keyframes ping-slow {
+    75%, 100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  .animate-ping-slow {
+    animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 }

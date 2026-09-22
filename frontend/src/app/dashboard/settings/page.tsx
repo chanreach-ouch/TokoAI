@@ -1,78 +1,90 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { CheckCircle2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Button, Card, Textarea } from "@/components/ui/design-system";
 import api from "@/lib/api";
-import { Button } from "@/components/ui/button";
 
 export default function SettingsPage() {
-  const [botTone, setBotTone] = useState("Professional");
-  const [isActive, setIsActive] = useState(true);
+  const [tone, setTone] = useState('Friendly');
+  const [dualCurrency, setDualCurrency] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
-    api.get("/seller/settings")
-      .then((res) => {
-        setBotTone(res.data.bot_tone);
-        setIsActive(res.data.is_active);
-      })
-      .finally(() => setIsLoading(false));
+    fetchSettings();
   }, []);
 
-  const handleSave = async () => {
+  const fetchSettings = async () => {
     try {
-      await api.post("/seller/settings", { bot_tone: botTone, is_active: isActive });
-      alert("Settings saved successfully!");
-    } catch (err) {
-      alert("Failed to save settings.");
+      const res = await api.get('/seller/settings');
+      setTone(res.data.bot_tone);
+      setIsActive(res.data.is_active);
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isLoading) return <div className="p-8">Loading...</div>;
+  const handleSave = async () => {
+    try {
+      await api.post('/seller/settings', {
+        bot_tone: tone,
+        is_active: isActive
+      });
+      alert('Settings saved!');
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  if (isLoading) return <div className="p-8 text-zinc-500">Loading settings...</div>;
 
   return (
-    <div className="p-8 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">AI Settings</h1>
-      <p className="text-muted-foreground mb-8">
-        Control how your Gemini AI agent behaves and communicates with your customers.
-      </p>
-
-      <div className="space-y-6">
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h3 className="text-lg font-semibold mb-2">Bot Personality / Tone</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Select the tone of voice the AI should use when replying to TikTok messages.
-          </p>
-          <select 
-            value={botTone}
-            onChange={(e) => setBotTone(e.target.value)}
-            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="Professional">Professional (Formal & Polite)</option>
-            <option value="Friendly">Friendly (Casual & Warm)</option>
-            <option value="Gen-Z">Gen-Z (Trendy & Use Emojis)</option>
-          </select>
-        </div>
-
-        <div className="rounded-xl border bg-card p-6 shadow-sm flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold mb-1">AI Agent Status</h3>
-            <p className="text-sm text-muted-foreground">
-              Turn the AI auto-reply on or off. If turned off, the AI will ignore incoming messages.
-            </p>
+    <div className="max-w-2xl space-y-8 animate-in fade-in duration-500">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight text-white mb-6">AI Personality & Settings</h2>
+        
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-white">Bot Tone</h3>
+          <div className="grid grid-cols-3 gap-4">
+            {['Friendly', 'Professional', 'Gen-Z'].map(t => (
+              <Card 
+                key={t} 
+                className={`p-4 cursor-pointer transition-all ${tone.toLowerCase() === t.toLowerCase() ? 'border-white bg-[#111]' : 'hover:border-[#444]'}`}
+                onClick={() => setTone(t)}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-medium ${tone.toLowerCase() === t.toLowerCase() ? 'text-white' : 'text-zinc-400'}`}>{t}</span>
+                  {tone.toLowerCase() === t.toLowerCase() && <CheckCircle2 size={16} className="text-white" />}
+                </div>
+                <p className="text-[10px] text-zinc-500">Optimized for {t.toLowerCase()} audience.</p>
+              </Card>
+            ))}
           </div>
-          <button 
-            onClick={() => setIsActive(!isActive)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isActive ? 'bg-primary' : 'bg-input'}`}
-          >
-            <span className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${isActive ? 'translate-x-5' : 'translate-x-0'}`} />
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-6 border-t border-[#222]">
+        <h3 className="text-sm font-medium text-white">Custom System Instructions</h3>
+        <p className="text-xs text-zinc-500">Inject secret rules directly into the Gemini context window.</p>
+        <Textarea defaultValue="Always greet the customer with 'Sousdey!'. Never offer discounts above 10% without human approval." />
+      </div>
+
+      <div className="space-y-4 pt-6 border-t border-[#222]">
+        <div className="flex items-center justify-between p-4 bg-black border border-[#222] rounded-xl">
+          <div>
+            <h3 className="text-sm font-medium text-white">Dual Currency Display (USD/KHR)</h3>
+            <p className="text-xs text-zinc-500">AI will automatically quote prices in both currencies based on current exchange rate.</p>
+          </div>
+          <button onClick={() => setDualCurrency(!dualCurrency)} className="text-white">
+            {dualCurrency ? <ToggleRight size={32} className="text-emerald-500" /> : <ToggleLeft size={32} className="text-zinc-600" />}
           </button>
         </div>
-
-        <Button onClick={handleSave} className="w-full">
-          Save Settings
-        </Button>
       </div>
+      
+      <Button onClick={handleSave} className="w-full">Save Changes</Button>
     </div>
   );
 }

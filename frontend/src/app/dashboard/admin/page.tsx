@@ -1,134 +1,86 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Shield } from "lucide-react";
+import { Button, Card, Badge } from "@/components/ui/design-system";
 import api from "@/lib/api";
-import { Button } from "@/components/ui/button";
-
-interface Seller {
-  id: string;
-  email: string;
-  created_at: string;
-  is_active: boolean;
-  bot_tone: string;
-  ai_token_usage: number;
-  is_superadmin: boolean;
-}
 
 export default function AdminPage() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-  const [sellers, setSellers] = useState<Seller[]>([]);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSellers();
+  }, []);
 
   const fetchSellers = async () => {
     try {
-      const res = await api.get("/admin/sellers");
-      setSellers(res.data);
-    } catch (err) {
-      console.error(err);
+      const res = await api.get('/admin/sellers');
+      setTenants(res.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (!isLoading && !user?.is_superadmin) {
-      router.push("/dashboard");
-    } else if (user?.is_superadmin) {
-      fetchSellers();
-    }
-  }, [user, isLoading, router]);
-
-  const toggleSuspend = async (id: string, isSuperadmin: boolean) => {
-    if (isSuperadmin) {
-      alert("You cannot suspend the master admin account!");
-      return;
-    }
-    
+  const handleToggleStatus = async (sellerId: string) => {
     try {
-      await api.post(`/admin/sellers/${id}/toggle-suspend`);
-      fetchSellers(); // Refresh list
-    } catch (err) {
-      alert("Failed to toggle suspension status");
+      await api.post(`/admin/sellers/${sellerId}/toggle-status`);
+      fetchSellers();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to toggle seller status.");
     }
   };
-
-  if (isLoading || !user?.is_superadmin) {
-    return null;
-  }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-2">Platform Administration</h1>
-      <p className="text-muted-foreground mb-8">
-        Manage your SaaS tenants, track AI token usage, and enforce suspensions.
-      </p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-2">
+          <Shield className="text-amber-500" /> Superadmin Panel
+        </h2>
+        <p className="text-sm text-zinc-500 mt-1">Manage tenant shops and system status.</p>
+      </div>
       
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-muted text-muted-foreground uppercase font-semibold text-xs border-b">
-            <tr>
-              <th className="px-6 py-4">Account / Email</th>
-              <th className="px-6 py-4">Joined Date</th>
-              <th className="px-6 py-4">AI Usage (Tokens)</th>
-              <th className="px-6 py-4">Bot Tone</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {sellers.length === 0 ? (
+      {isLoading ? (
+        <div className="text-zinc-500 text-sm">Loading tenants...</div>
+      ) : (
+        <Card className="overflow-hidden">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-[#050505] border-b border-[#222] text-xs uppercase tracking-wider text-zinc-500">
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                  No sellers found.
-                </td>
+                <th className="px-6 py-4 font-medium">Tenant Email</th>
+                <th className="px-6 py-4 font-medium">Bot Tone</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
-            ) : (
-              sellers.map((s) => (
-                <tr key={s.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4 font-medium">
-                    {s.email}
-                    {s.is_superadmin && (
-                      <span className="ml-2 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                        Admin
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">
-                    {new Date(s.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 font-mono font-bold text-primary">
-                    {s.ai_token_usage.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">
-                    {s.bot_tone}
-                  </td>
+            </thead>
+            <tbody className="divide-y divide-[#222]">
+              {tenants.map(tenant => (
+                <tr key={tenant.id} className="hover:bg-[#111] transition-colors">
+                  <td className="px-6 py-4 font-medium text-white">{tenant.email}</td>
+                  <td className="px-6 py-4 text-zinc-400 capitalize">{tenant.bot_tone || 'Friendly'}</td>
                   <td className="px-6 py-4">
-                    {s.is_active ? (
-                      <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
-                        Suspended
-                      </span>
-                    )}
+                    <Badge variant={tenant.is_active ? 'success' : 'destructive'}>
+                      {tenant.is_active ? 'Active' : 'Suspended'}
+                    </Badge>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Button 
-                      variant={s.is_active ? "destructive" : "default"}
-                      size="sm"
-                      onClick={() => toggleSuspend(s.id, s.is_superadmin)}
-                      disabled={s.is_superadmin}
+                      variant={tenant.is_active ? 'ghost' : 'secondary'} 
+                      className="h-7 text-xs"
+                      onClick={() => handleToggleStatus(tenant.id)}
                     >
-                      {s.is_active ? "Suspend" : "Reactivate"}
+                      {tenant.is_active ? 'Suspend' : 'Activate'}
                     </Button>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
     </div>
   );
 }

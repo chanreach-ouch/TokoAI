@@ -7,7 +7,7 @@ sqlalchemy
 pgvector
 pydantic-settings
 httpx
-google-genai
+google-generativeai
 qrcode
 pillow
 crccheck

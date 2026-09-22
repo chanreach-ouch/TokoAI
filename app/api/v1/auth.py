@@ -44,3 +44,18 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         "is_superadmin": seller.is_superadmin
     })
     return {"access_token": token, "token_type": "bearer"}
+
+from app.core.auth import get_current_seller
+
+@router.get("/me", summary="Get logged-in profile")
+async def get_me(seller_id: str = Depends(get_current_seller), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Seller).where(Seller.id == seller_id))
+    seller = result.scalar_one_or_none()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    return {
+        "id": seller.id,
+        "email": seller.email,
+        "bot_tone": seller.bot_tone,
+        "is_superadmin": seller.is_superadmin
+    }

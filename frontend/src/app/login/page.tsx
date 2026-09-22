@@ -1,105 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { Bot } from "lucide-react";
+import { Button, Input } from "@/components/ui/design-system";
 import api from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
-import { Loader2 } from "lucide-react";
-import axios from "axios";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@tokoai.com");
+  const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
-
     try {
-      const res = await api.post("/auth/login", {
-        email,
-        password
-      });
-      
-      login(res.data.access_token);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const detail = err.response?.data?.detail;
-        if (typeof detail === 'string') {
-          setError(detail);
-        } else if (Array.isArray(detail)) {
-          setError(detail.map((d: Record<string, string>) => d.msg).join(", "));
-        } else {
-          setError("Invalid credentials");
-        }
-      } else {
-        setError("An error occurred");
-      }
-    } finally {
-      setIsLoading(false);
+      const res = await api.post("/auth/login", { email, password });
+      localStorage.setItem("tokoai_token", res.data.access_token);
+      router.push("/dashboard/analytics");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Login failed");
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <CardDescription>
-            Log in to manage your TokoAI TikTok Shop
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seller@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 selection:bg-zinc-800 selection:text-white font-sans">
+      <div className="w-full max-w-[360px] space-y-6">
+        <div className="flex flex-col space-y-2 text-left mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <Bot size={18} className="text-black" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign In
-            </Button>
-            <div className="text-center text-sm text-slate-500">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="font-semibold text-slate-900 hover:underline">
-                Sign up
-              </Link>
-            </div>
-          </CardFooter>
+            <span className="font-semibold text-xl tracking-tight text-white">TokoAI</span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Log in to your account</h1>
+          <p className="text-sm text-zinc-500">Enter your credentials to access your dashboard.</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 text-red-500 border border-red-500/20 p-3 rounded-md text-sm font-medium">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-300">Email address</label>
+            <Input 
+              type="email" 
+              placeholder="name@company.com" 
+              value={email}
+              onChange={(e: any) => setEmail(e.target.value)}
+              required 
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-300">Password</label>
+            <Input 
+              type="password" 
+              value={password}
+              onChange={(e: any) => setPassword(e.target.value)}
+              required 
+            />
+          </div>
+          <Button type="submit" className="w-full mt-4">Sign In</Button>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

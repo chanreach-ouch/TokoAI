@@ -84,3 +84,48 @@ async def toggle_takeover(conversation_id: str, seller_id: str = Depends(get_cur
         "is_human_takeover": conv.is_human_takeover,
         "message": f"Takeover {'enabled' if conv.is_human_takeover else 'disabled'}"
     }
+
+from pydantic import BaseModel
+
+class ReplyRequest(BaseModel):
+    content: str
+
+@router.post("/{conversation_id}/reply", summary="Send a manual human reply")
+async def send_manual_reply(
+    conversation_id: str, 
+    req: ReplyRequest,
+    seller_id: str = Depends(get_current_seller), 
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Conversation)
+        .where(Conversation.id == uuid.UUID(conversation_id), Conversation.seller_id == uuid.UUID(seller_id))
+    )
+    conv = result.scalar_one_or_none()
+    
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+        
+    # Auto-enable human takeover when sending a manual reply
+    conv.is_human_takeover = True
+    
+    # Save the message
+    new_message = Message(
+        conversation_id=conv.id,
+        sender_type="SELLER",
+        role="assistant",
+        content=req.content
+    )
+    
+    db.add(new_message)
+    await db.commit()
+    await db.refresh(new_message)
+    
+    # Normally here you would also push this message out via TikTok API 
+    # to the actual customer. For now we just log it in the DB.
+    
+    return {
+        "status": "success", 
+        "message_id": str(new_message.id),
+        "is_human_takeover": conv.is_human_takeover
+    }
