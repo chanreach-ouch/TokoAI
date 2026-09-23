@@ -1,113 +1,97 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import api from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
-import axios from "axios";
+import { Bot } from "lucide-react";
+import { Button, Input } from "@/components/ui/design-system";
+import api from "@/lib/api";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
-      // 1. Register the user
-      await api.post("/auth/register", {
-        email,
-        password
-      });
-
-      // 2. Automatically log them in after registration
-      const res = await api.post("/auth/login", {
-        email,
-        password
-      });
+      // Register the seller
+      await api.post("/auth/register", { email, password });
       
-      login(res.data.access_token);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const detail = err.response?.data?.detail;
-        if (typeof detail === 'string') {
-          setError(detail);
-        } else if (Array.isArray(detail)) {
-          setError(detail.map((d: Record<string, string>) => d.msg).join(", "));
-        } else {
-          setError("Something went wrong. Please try again.");
-        }
-      } else {
-        setError("An error occurred");
-      }
+      // Auto-login to get the token
+      const res = await api.post("/auth/login", { email, password });
+      localStorage.setItem("tokoai_token", res.data.access_token);
+      
+      router.push("/dashboard/analytics");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Registration failed");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>
-            Start automating your TikTok Shop today
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleRegister}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seller@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 selection:bg-zinc-800 selection:text-white font-sans">
+      <div className="w-full max-w-[360px] space-y-6">
+        <div className="flex flex-col space-y-2 text-left mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <Bot size={18} className="text-black" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Create a strong password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign Up
-            </Button>
-            <div className="text-center text-sm text-slate-500">
-              Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-slate-900 hover:underline">
-                Sign in
-              </Link>
-            </div>
-          </CardFooter>
+            <span className="font-semibold text-xl tracking-tight text-white">TokoAI</span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Create an account</h1>
+          <p className="text-sm text-zinc-500">Sign up to automate your multi-channel commerce.</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 text-red-500 border border-red-500/20 p-3 rounded-md text-sm font-medium">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-300">Email address</label>
+            <Input 
+              type="email" 
+              placeholder="name@company.com" 
+              value={email}
+              onChange={(e: any) => setEmail(e.target.value)}
+              required 
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-300">Password</label>
+            <Input 
+              type="password" 
+              placeholder="Create a strong password"
+              value={password}
+              onChange={(e: any) => setPassword(e.target.value)}
+              pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$"
+              title="Must be at least 8 characters, contain a letter, a number, and a special character"
+              required 
+            />
+            <p className="text-xs text-zinc-500">
+              Must be at least 8 characters, contain a letter, a number, and a special character.
+            </p>
+          </div>
+          <Button type="submit" className="w-full mt-4" disabled={isLoading}>
+            {isLoading ? "Creating account..." : "Sign Up"}
+          </Button>
         </form>
-      </Card>
+
+        <p className="text-center text-sm text-zinc-500">
+          Already have an account?{" "}
+          <Link href="/login" className="text-white hover:underline underline-offset-4">
+            Log in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

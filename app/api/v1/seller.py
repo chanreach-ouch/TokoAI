@@ -53,3 +53,51 @@ async def create_or_update_shop(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+class IntegrationsUpdate(BaseModel):
+    tiktok_page_id: str | None = None
+    bakong_merchant_id: str | None = None
+
+@router.get("/integrations", summary="Get shop integrations")
+async def get_integrations(
+    db: AsyncSession = Depends(get_db),
+    seller_id: str = Depends(get_current_seller)
+):
+    from sqlalchemy import select
+    result = await db.execute(select(Shop).where(Shop.owner_id == uuid.UUID(seller_id)))
+    shop = result.scalar_one_or_none()
+    if not shop:
+        return {"tiktok_page_id": "", "bakong_merchant_id": ""}
+    return {
+        "tiktok_page_id": shop.tiktok_page_id or "",
+        "bakong_merchant_id": shop.bakong_merchant_id or ""
+    }
+
+@router.post("/integrations", summary="Update shop integrations")
+async def update_integrations(
+    data: IntegrationsUpdate,
+    db: AsyncSession = Depends(get_db),
+    seller_id: str = Depends(get_current_seller)
+):
+    from sqlalchemy import select
+    result = await db.execute(select(Shop).where(Shop.owner_id == uuid.UUID(seller_id)))
+    shop = result.scalar_one_or_none()
+    
+    if shop:
+        if data.tiktok_page_id is not None:
+            shop.tiktok_page_id = data.tiktok_page_id
+        if data.bakong_merchant_id is not None:
+            shop.bakong_merchant_id = data.bakong_merchant_id
+        await db.commit()
+    else:
+        shop = Shop(
+            tiktok_page_id=data.tiktok_page_id or f"temp_{uuid.uuid4().hex[:8]}",
+            owner_id=uuid.UUID(seller_id),
+            name="My Shop",
+            bakong_merchant_id=data.bakong_merchant_id
+        )
+        db.add(shop)
+        await db.commit()
+        
+    return {"status": "success"}
+

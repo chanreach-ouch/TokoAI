@@ -16,3 +16,4 @@ pytest-asyncio
 python-multipart
 passlib[bcrypt]
 PyJWT
+slowapi==0.1.9 

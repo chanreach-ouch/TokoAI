@@ -7,20 +7,34 @@ import {
   User, Bell, ChevronRight, Bot, Link2, ShoppingBag, Shield 
 } from "lucide-react";
 import { Button } from "@/components/ui/design-system";
+import api from "@/lib/api";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [userEmail, setUserEmail] = useState("Active Shop");
+
+  useEffect(() => {
+    // Fetch profile to check if user is superadmin
+    api.get('/auth/me').then((res) => {
+      setIsSuperadmin(res.data.is_superadmin);
+      setUserEmail(res.data.email);
+    }).catch(() => {
+      // If unauthorized, kick to login
+      router.push('/login');
+    });
+  }, [router]);
 
   const navItems = [
-    { id: '/dashboard/analytics', label: 'Overview', icon: LayoutDashboard },
-    { id: '/dashboard/inbox', label: 'AI Inbox', icon: MessageSquare },
-    { id: '/dashboard/knowledge-base', label: 'Knowledge Base', icon: Database },
-    { id: '/dashboard/orders', label: 'Orders', icon: ShoppingBag },
-    { id: '/dashboard/integrations', label: 'Integrations', icon: Link2 },
-    { id: '/dashboard/settings', label: 'Settings', icon: Settings },
-    { id: '/dashboard/admin', label: 'Admin', icon: Shield },
-  ];
+    { id: '/dashboard/analytics', label: 'Overview', icon: LayoutDashboard, adminOnly: false },
+    { id: '/dashboard/inbox', label: 'AI Inbox', icon: MessageSquare, adminOnly: false },
+    { id: '/dashboard/knowledge-base', label: 'Knowledge Base', icon: Database, adminOnly: false },
+    { id: '/dashboard/orders', label: 'Orders', icon: ShoppingBag, adminOnly: false },
+    { id: '/dashboard/integrations', label: 'Integrations', icon: Link2, adminOnly: false },
+    { id: '/dashboard/settings', label: 'Settings', icon: Settings, adminOnly: false },
+    { id: '/dashboard/admin', label: 'Admin', icon: Shield, adminOnly: true },
+  ].filter(item => !item.adminOnly || isSuperadmin);
 
   const handleLogout = () => {
     localStorage.removeItem("tokoai_token");
@@ -67,7 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <User size={14} className="text-zinc-300" />
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium text-zinc-200 truncate group-hover:text-white">Active Shop</p>
+              <p className="text-sm font-medium text-zinc-200 truncate group-hover:text-white">{userEmail}</p>
               <p className="text-xs text-zinc-500 truncate">Pro Plan</p>
             </div>
           </div>

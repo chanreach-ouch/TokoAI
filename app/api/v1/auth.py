@@ -1,16 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from app.core.db import get_db
 from app.models.seller import Seller
 from app.core.auth import get_password_hash, verify_password, create_access_token
+import re
 
 router = APIRouter()
 
 class RegisterRequest(BaseModel):
     email: str
-    password: str
+    password: str = Field(..., min_length=8)
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if not re.match(r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$", v):
+            raise ValueError("Password must contain at least one letter, one number, and one special character.")
+        return v
 
 class LoginRequest(BaseModel):
     email: str

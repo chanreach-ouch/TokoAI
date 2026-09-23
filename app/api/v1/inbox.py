@@ -86,12 +86,16 @@ async def toggle_takeover(conversation_id: str, seller_id: str = Depends(get_cur
     }
 
 from pydantic import BaseModel
+from fastapi import Request
+from app.core.rate_limit import limiter
 
 class ReplyRequest(BaseModel):
     content: str
 
 @router.post("/{conversation_id}/reply", summary="Send a manual human reply")
+@limiter.limit("20/minute")
 async def send_manual_reply(
+    request: Request,
     conversation_id: str, 
     req: ReplyRequest,
     seller_id: str = Depends(get_current_seller), 

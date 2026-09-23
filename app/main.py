@@ -13,16 +13,44 @@ from app.api.v1.admin import router as admin_router
 from app.api.v1.analytics import router as analytics_router
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.rate_limit import limiter
 
-app = FastAPI(title="TokoAI Commerce Agent")
+description = """
+**TokoAI Commerce Agent API**
+
+This is the core backend engine powering TokoAI, a multi-tenant AI commerce platform.
+
+### Core Capabilities:
+* **AI Auto-Pilot**: Automated customer support using Gemini and PostgreSQL pgvector.
+* **TikTok Shop**: Webhook integration for real-time customer messaging.
+* **Bakong KHQR**: Dynamic QR code generation for instant fiat and cryptocurrency payments.
+* **Multi-Tenant Architecture**: Secure isolation of shops, products, and analytics for every seller.
+"""
+
+app = FastAPI(
+    title="TokoAI Commerce Agent",
+    description=description,
+    version="1.0.0",
+    contact={
+        "name": "TokoAI Engineering Team",
+        "email": "admin@tokoai.com",
+    }
+)
+
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[frontend_url, "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Ensure static directory exists
 os.makedirs("app/static/uploads", exist_ok=True)

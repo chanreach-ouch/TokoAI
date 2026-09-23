@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Bot } from "lucide-react";
 import { Button, Input } from "@/components/ui/design-system";
 import api from "@/lib/api";
@@ -66,6 +67,13 @@ export default function LoginPage() {
           </div>
           <Button type="submit" className="w-full mt-4">Sign In</Button>
         </form>
+
+        <p className="text-center text-sm text-zinc-500">
+          Don't have an account?{" "}
+          <Link href="/register" className="text-white hover:underline underline-offset-4">
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   );
