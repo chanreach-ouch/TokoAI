@@ -46,3 +46,17 @@ async def get_superadmin(payload: dict = Depends(verify_token)):
     if not seller_id or not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized as superadmin")
     return seller_id
+
+async def get_current_owner(payload: dict = Depends(verify_token)):
+    seller_id = payload.get("sub")
+    role = payload.get("role")
+    if not seller_id or role != "OWNER":
+        raise HTTPException(status_code=403, detail="Not authorized as owner")
+    return seller_id
+
+async def get_current_agent(payload: dict = Depends(verify_token)):
+    seller_id = payload.get("sub")
+    role = payload.get("role")
+    if not seller_id or role not in ["OWNER", "AGENT"]:
+        raise HTTPException(status_code=403, detail="Not authorized as agent")
+    return seller_id

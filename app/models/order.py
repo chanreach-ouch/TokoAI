@@ -12,7 +12,12 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     items: Mapped[dict] = mapped_column(JSONB, nullable=False)
     total_amount_usd: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    status: Mapped[str] = mapped_column(String, nullable=False, default="PENDING") # PENDING, PAID, CANCELLED
+    status: Mapped[str] = mapped_column(String, nullable=False, default="PENDING") # PENDING, PAID, SHIPPED, CANCELLED
     khqr_string: Mapped[str | None] = mapped_column(String, nullable=True)
     khqr_md5: Mapped[str | None] = mapped_column(String, nullable=True)
+    
+    # Logistics
+    tracking_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    waybill_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    logistics_provider: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

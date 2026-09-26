@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 .env
 .pytest_cache/
+
+# Competitor Intel
+docs/competitor_1/
+docs/competitor_2/
+docs/Competitor_Comparison_and_Strategy_Playbook.docx
+docs/Competitor_2_TobSar_Teardown.docx
+docs/Competitor_1_CHUMNOUYKAR_Teardown.docx

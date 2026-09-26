@@ -137,8 +137,8 @@ export default function InboxPage() {
                 ) : (
                   <>
                     <div className="bg-transparent border border-[#333] text-zinc-300 text-sm p-3 rounded-2xl rounded-tr-sm flex flex-col items-center gap-3">
-                      <span>{msg.content}</span>
-                      {msg.type === 'bakong' && (
+                      <span>{msg.content.replace(/khqr:\/\/bakong\/[a-zA-Z0-9-]+/g, '')}</span>
+                      {(msg.type === 'bakong' || msg.content.includes('khqr://bakong')) && (
                         <div className="bg-white p-3 rounded-xl flex flex-col items-center mt-2">
                           <QrCode size={120} className="text-black mb-2" />
                           <span className="text-black font-bold text-xs uppercase">Scan to Pay</span>

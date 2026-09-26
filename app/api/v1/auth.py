@@ -49,7 +49,9 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     token = create_access_token({
         "sub": str(seller.id), 
         "email": seller.email,
-        "is_superadmin": seller.is_superadmin
+        "is_superadmin": seller.is_superadmin,
+        "role": seller.role,
+        "shop_id": str(seller.shop_id) if seller.shop_id else None
     })
     return {"access_token": token, "token_type": "bearer"}
 
@@ -65,5 +67,52 @@ async def get_me(seller_id: str = Depends(get_current_seller), db: AsyncSession 
         "id": seller.id,
         "email": seller.email,
         "bot_tone": seller.bot_tone,
-        "is_superadmin": seller.is_superadmin
+        "is_superadmin": seller.is_superadmin,
+        "role": seller.role,
+        "shop_id": seller.shop_id
     }
+
+from app.core.auth import get_current_owner
+
+class InviteRequest(BaseModel):
+    email: str
+    password: str = Field(..., min_length=8)
+    shop_id: str
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if not re.match(r"^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$", v):
+            raise ValueError("Password must contain at least one letter, one number, and one special character.")
+        return v
+
+@router.post("/invite", summary="Invite a staff agent to a shop")
+async def invite_staff(
+    req: InviteRequest, 
+    owner_id: str = Depends(get_current_owner), 
+    db: AsyncSession = Depends(get_db)
+):
+    # Verify owner actually owns this shop
+    from app.models.shop import Shop
+    result = await db.execute(select(Shop).where(Shop.id == req.shop_id, Shop.owner_id == owner_id))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Not authorized to invite to this shop")
+
+    # Check if email exists
+    result = await db.execute(select(Seller).where(Seller.email == req.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    from app.models.seller import SellerRole
+    hashed_password = get_password_hash(req.password)
+    new_staff = Seller(
+        email=req.email, 
+        hashed_password=hashed_password,
+        role=SellerRole.AGENT.value,
+        shop_id=req.shop_id
+    )
+    db.add(new_staff)
+    await db.commit()
+    await db.refresh(new_staff)
+    
+    return {"status": "success", "message": "Staff invited successfully", "staff_id": new_staff.id}

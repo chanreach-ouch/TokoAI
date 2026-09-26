@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 from app.core.db import get_db
-from app.core.auth import get_current_seller
+from app.core.auth import get_current_owner
 from app.models.seller import Seller
 import uuid
 
@@ -14,7 +14,7 @@ class SettingsUpdate(BaseModel):
     is_active: bool
 
 @router.get("", summary="Get seller settings")
-async def get_settings(seller_id: str = Depends(get_current_seller), db: AsyncSession = Depends(get_db)):
+async def get_settings(seller_id: str = Depends(get_current_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Seller).where(Seller.id == uuid.UUID(seller_id)))
     seller = result.scalar_one_or_none()
     
@@ -24,11 +24,13 @@ async def get_settings(seller_id: str = Depends(get_current_seller), db: AsyncSe
     return {
         "bot_tone": seller.bot_tone,
         "is_active": seller.is_active,
-        "ai_token_usage": seller.ai_token_usage
+        "ai_token_usage": seller.ai_token_usage,
+        "ai_message_limit": seller.ai_message_limit,
+        "subscription_tier": seller.subscription_tier
     }
 
 @router.post("", summary="Update seller settings")
-async def update_settings(req: SettingsUpdate, seller_id: str = Depends(get_current_seller), db: AsyncSession = Depends(get_db)):
+async def update_settings(req: SettingsUpdate, seller_id: str = Depends(get_current_owner), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Seller).where(Seller.id == uuid.UUID(seller_id)))
     seller = result.scalar_one_or_none()
     

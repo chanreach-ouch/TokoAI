@@ -13,12 +13,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [userRole, setUserRole] = useState("OWNER");
   const [userEmail, setUserEmail] = useState("Active Shop");
 
   useEffect(() => {
-    // Fetch profile to check if user is superadmin
+    // Fetch profile to check if user is superadmin and get role
     api.get('/auth/me').then((res) => {
       setIsSuperadmin(res.data.is_superadmin);
+      setUserRole(res.data.role || "OWNER");
       setUserEmail(res.data.email);
     }).catch(() => {
       // If unauthorized, kick to login
@@ -27,14 +29,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   const navItems = [
-    { id: '/dashboard/analytics', label: 'Overview', icon: LayoutDashboard, adminOnly: false },
-    { id: '/dashboard/inbox', label: 'AI Inbox', icon: MessageSquare, adminOnly: false },
-    { id: '/dashboard/knowledge-base', label: 'Knowledge Base', icon: Database, adminOnly: false },
-    { id: '/dashboard/orders', label: 'Orders', icon: ShoppingBag, adminOnly: false },
-    { id: '/dashboard/integrations', label: 'Integrations', icon: Link2, adminOnly: false },
-    { id: '/dashboard/settings', label: 'Settings', icon: Settings, adminOnly: false },
-    { id: '/dashboard/admin', label: 'Admin', icon: Shield, adminOnly: true },
-  ].filter(item => !item.adminOnly || isSuperadmin);
+    { id: '/dashboard/analytics', label: 'Overview', icon: LayoutDashboard, adminOnly: false, ownerOnly: true },
+    { id: '/dashboard/inbox', label: 'AI Inbox', icon: MessageSquare, adminOnly: false, ownerOnly: false },
+    { id: '/dashboard/knowledge-base', label: 'Knowledge Base', icon: Database, adminOnly: false, ownerOnly: false },
+    { id: '/dashboard/orders', label: 'Orders', icon: ShoppingBag, adminOnly: false, ownerOnly: false },
+    { id: '/dashboard/integrations', label: 'Integrations', icon: Link2, adminOnly: false, ownerOnly: true },
+    { id: '/dashboard/settings', label: 'Settings', icon: Settings, adminOnly: false, ownerOnly: true },
+    { id: '/dashboard/admin', label: 'Admin', icon: Shield, adminOnly: true, ownerOnly: true },
+  ].filter(item => {
+    if (item.adminOnly && !isSuperadmin) return false;
+    if (item.ownerOnly && userRole === "AGENT") return false;
+    return true;
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("tokoai_token");
@@ -82,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-sm font-medium text-zinc-200 truncate group-hover:text-white">{userEmail}</p>
-              <p className="text-xs text-zinc-500 truncate">Pro Plan</p>
+              <p className="text-xs text-zinc-500 truncate">{userRole === "AGENT" ? "Staff Agent" : "Shop Owner"}</p>
             </div>
           </div>
         </div>

@@ -22,6 +22,8 @@ async def retrieve_relevant_products(query: str, session, shop_id, top_k=2):
         print(f"Embedding error: {e}")
         return []
 
+from google.genai import types
+
 async def run_agent(sender_id: str, shop_id, message_text: str, memory: list[str]) -> str:
     async with AsyncSessionLocal() as session:
         products = await retrieve_relevant_products(message_text, session, shop_id)
@@ -34,11 +36,88 @@ async def run_agent(sender_id: str, shop_id, message_text: str, memory: list[str
         
         prompt = f"{SYSTEM_PROMPT}\n\nShop ID: {shop_id}\n\nContext:\n{context}\n\nChat History:\n{history}\n\nUser: {message_text}\nAgent:"
         
+        # Define the checkout tool
+        create_order_tool = types.Tool(
+            function_declarations=[
+                types.FunctionDeclaration(
+                    name="create_order",
+                    description="Creates a new pending order and returns the Bakong KHQR checkout details. Call this when the customer confirms they want to buy a product.",
+                    parameters=types.Schema(
+                        type=types.Type.OBJECT,
+                        properties={
+                            "sku": types.Schema(type=types.Type.STRING, description="The exact SKU of the product to buy"),
+                            "quantity": types.Schema(type=types.Type.INTEGER, description="Quantity to purchase")
+                        },
+                        required=["sku", "quantity"]
+                    )
+                )
+            ]
+        )
+        
         try:
-            response = client.models.generate_content(
+            # 1. Ask Gemini
+            response = await client.aio.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=prompt
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    tools=[create_order_tool]
+                )
             )
+            
+            # 2. Check if Gemini wants to call a function
+            if response.function_calls:
+                fc = response.function_calls[0]
+                if fc.name == "create_order":
+                    sku = fc.args.get("sku")
+                    qty = int(fc.args.get("quantity", 1))
+                    
+                    # 3. Execute DB Order Creation
+                    from app.models.order import Order
+                    # Mock finding user
+                    user_id = 1
+                    import uuid
+                    
+                    # Look up product price
+                    stmt = select(Product).where(Product.sku == sku, Product.shop_id == shop_id)
+                    p_res = await session.execute(stmt)
+                    prod = p_res.scalar_one_or_none()
+                    
+                    if not prod or prod.stock_qty < qty:
+                        tool_result = {"status": "failed", "reason": "Out of stock or invalid SKU."}
+                    else:
+                        total_usd = float(prod.price_usd) * qty
+                        new_order = Order(
+                            shop_id=shop_id,
+                            user_id=user_id,
+                            items={"sku": sku, "qty": qty},
+                            total_amount_usd=total_usd,
+                            khqr_string=f"khqr://bakong/{uuid.uuid4()}",
+                            status="PENDING"
+                        )
+                        session.add(new_order)
+                        await session.commit()
+                        
+                        tool_result = {
+                            "status": "success", 
+                            "order_id": new_order.id, 
+                            "total_usd": total_usd,
+                            "khqr_code": new_order.khqr_string,
+                            "message_to_user": f"Order {new_order.id} created! Please scan the KHQR below to pay."
+                        }
+                    
+                    # 4. Return result to Gemini
+                    part_result = types.Part.from_function_response(
+                        name="create_order",
+                        response=tool_result
+                    )
+                    
+                    final_response = await client.aio.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=[prompt, response.candidates[0].content, part_result],
+                        config=types.GenerateContentConfig(tools=[create_order_tool])
+                    )
+                    return final_response.text
+                    
             return response.text
         except Exception as e:
             print(f"Gemini error: {e}")

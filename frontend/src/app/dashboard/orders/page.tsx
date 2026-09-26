@@ -52,8 +52,8 @@ export default function OrdersPage() {
               <th className="px-6 py-4 font-medium">Date</th>
               <th className="px-6 py-4 font-medium">Customer ID</th>
               <th className="px-6 py-4 font-medium">Amount (KHR)</th>
-              <th className="px-6 py-4 font-medium">Amount (USD)</th>
               <th className="px-6 py-4 font-medium">Status</th>
+              <th className="px-6 py-4 font-medium">Logistics</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#222]">
@@ -72,7 +72,6 @@ export default function OrdersPage() {
             ) : (
               orders.map(order => {
                 const khrAmount = (order.total_amount_usd * 4000).toLocaleString();
-                const usdAmount = Number(order.total_amount_usd).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 
                 return (
                   <tr key={order.id} className="hover:bg-[#111] transition-colors">
@@ -82,11 +81,34 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-6 py-4 text-zinc-300">User {order.user_id}</td>
                     <td className="px-6 py-4 text-zinc-300 tabular-nums">៛ {khrAmount}</td>
-                    <td className="px-6 py-4 text-zinc-300 tabular-nums">${usdAmount}</td>
                     <td className="px-6 py-4">
                       <Badge variant={getStatusVariant(order.status)}>
-                        {order.status === 'PAID' ? 'Success' : order.status}
+                        {order.status === 'PAID' ? 'Paid' : order.status}
                       </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.status === 'PAID' && (
+                        <div className="flex gap-2">
+                          <Button variant="secondary" className="h-7 text-[10px]" onClick={async () => {
+                            try {
+                              await api.post(`/orders/${order.id}/waybill`, { provider: 'J&T' });
+                              fetchOrders(page);
+                            } catch (e: any) { alert("Error: " + e.response?.data?.detail); }
+                          }}>J&T Express</Button>
+                          <Button variant="secondary" className="h-7 text-[10px]" onClick={async () => {
+                            try {
+                              await api.post(`/orders/${order.id}/waybill`, { provider: 'VET' });
+                              fetchOrders(page);
+                            } catch (e: any) { alert("Error: " + e.response?.data?.detail); }
+                          }}>Virak Buntham</Button>
+                        </div>
+                      )}
+                      {order.status === 'SHIPPED' && (
+                        <div className="flex flex-col">
+                          <span className="text-xs text-zinc-400">{order.logistics_provider}</span>
+                          <a href={order.waybill_url} target="_blank" className="text-xs text-blue-400 hover:underline">{order.tracking_number}</a>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
