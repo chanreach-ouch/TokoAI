@@ -121,7 +121,7 @@ export default function KnowledgeBasePage() {
         {activeTab === 'products' && (
           <Button 
             variant="brand" 
-            className="h-9 text-xs gap-1.5 shadow-xs shrink-0"
+            className="h-9 text-xs gap-1.5 shadow-sm shrink-0"
             onClick={() => fileInputRef.current?.click()}
           >
             <UploadCloud size={14} /> Upload Product Image
@@ -157,11 +157,11 @@ export default function KnowledgeBasePage() {
         <div className="space-y-6">
           {/* Vision Upload Card */}
           <Card 
-            className="p-8 border-2 border-dashed border-slate-300/80 hover:border-[#EA580C] transition-all flex flex-col items-center justify-center text-center cursor-pointer bg-[#FAF9F5] hover:bg-orange-50/20 group rounded-3xl shadow-2xs" 
+            className="p-8 border-2 border-dashed border-slate-300/80 hover:border-[#EA580C] transition-all flex flex-col items-center justify-center text-center cursor-pointer bg-[#FAF9F5] hover:bg-orange-50/20 group rounded-3xl shadow-sm" 
             onClick={() => fileInputRef.current?.click()}
           >
             <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" />
-            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 group-hover:border-[#EA580C]/40 flex items-center justify-center mb-3 transition-colors shadow-2xs">
+            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 group-hover:border-[#EA580C]/40 flex items-center justify-center mb-3 transition-colors shadow-sm">
               {isUploading ? (
                 <Bot size={22} className="text-[#EA580C] animate-pulse" />
               ) : (
@@ -210,7 +210,7 @@ export default function KnowledgeBasePage() {
 
       {activeTab === 'faqs' && (
         <div className="space-y-6">
-          <Card className="p-5 bg-white border border-slate-200/80 shadow-xs rounded-2xl">
+          <Card className="p-5 bg-white border border-slate-200/80 shadow-sm rounded-2xl">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
               <Sparkles size={13} className="text-[#EA580C]" /> Teach AI New Shop Policy
             </h3>
@@ -227,7 +227,7 @@ export default function KnowledgeBasePage() {
                 placeholder="Spoken Khmer response (e.g. ផ្ញើតាម J&T 1 ថ្ងៃដល់)" 
                 className="flex-1 text-xs font-khmer" 
               />
-              <Button onClick={handleAddFaq} variant="brand" className="text-xs h-10 px-4 shrink-0 shadow-xs">
+              <Button onClick={handleAddFaq} variant="brand" className="text-xs h-10 px-4 shrink-0 shadow-sm">
                 <Plus size={14} className="mr-1" /> Add Rule
               </Button>
             </div>
@@ -237,7 +237,7 @@ export default function KnowledgeBasePage() {
             {faqs.map(faq => (
               <div 
                 key={faq.id} 
-                className="flex items-center justify-between p-4 border border-slate-200/80 rounded-2xl bg-white hover:border-slate-300 shadow-2xs transition-all group"
+                className="flex items-center justify-between p-4 border border-slate-200/80 rounded-2xl bg-white hover:border-slate-300 shadow-sm transition-all group"
               >
                 <div className="flex flex-col gap-1 min-w-0 pr-4">
                   <p className="text-xs font-bold text-[#0F172A]">{faq.question}</p>
@@ -248,7 +248,7 @@ export default function KnowledgeBasePage() {
                 <button 
                   onClick={() => handleDeleteFaq(faq.id)} 
                   title="Delete Rule"
-                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all opacity-80 group-hover:opacity-100"
+                  className="text-rose-600/70 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition-all opacity-80 group-hover:opacity-100"
                 >
                   <Trash2 size={15} />
                 </button>
@@ -295,7 +295,7 @@ export default function KnowledgeBasePage() {
             </div>
             <div className="flex gap-2.5 pt-3 mt-4 border-t border-slate-100">
               <Button variant="ghost" className="flex-1 text-xs" onClick={() => setDraftProduct(null)}>Discard</Button>
-              <Button variant="brand" className="flex-1 text-xs shadow-xs" onClick={handleSaveProduct}>Save to Catalog</Button>
+              <Button variant="brand" className="flex-1 text-xs shadow-sm" onClick={handleSaveProduct}>Save to Catalog</Button>
             </div>
           </div>
         )}

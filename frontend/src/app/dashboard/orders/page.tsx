@@ -103,7 +103,7 @@ export default function OrdersPage() {
           {paidCount > 0 && (
             <Button 
               variant="brand" 
-              className="h-9 text-xs gap-1.5 shadow-xs"
+              className="h-9 text-xs gap-1.5 shadow-sm"
               onClick={handleBatchDispatch}
             >
               <Truck size={14} /> Batch Dispatch ({paidCount})
@@ -111,7 +111,7 @@ export default function OrdersPage() {
           )}
           <Button 
             variant="secondary" 
-            className="h-9 text-xs gap-1.5 shadow-2xs" 
+            className="h-9 text-xs gap-1.5 shadow-sm" 
             onClick={() => fetchOrders(page)}
           >
             <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} /> Refresh
@@ -121,7 +121,7 @@ export default function OrdersPage() {
 
       {/* Fulfillment Pulse Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Ready for Carrier Pickup</p>
             <p className="text-2xl font-extrabold text-[#EA580C] mt-1 tabular-nums">{paidCount} Paid Orders</p>
@@ -131,7 +131,7 @@ export default function OrdersPage() {
             <Package size={20} />
           </div>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Dispatched & In Transit</p>
             <p className="text-2xl font-extrabold text-emerald-700 mt-1 tabular-nums">{shippedCount} Waybills</p>
@@ -141,7 +141,7 @@ export default function OrdersPage() {
             <Truck size={20} />
           </div>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Order Volume</p>
             <p className="text-2xl font-extrabold text-[#0F172A] mt-1 tabular-nums">${totalVolume.toFixed(2)}</p>
@@ -154,7 +154,7 @@ export default function OrdersPage() {
       </div>
       
       {/* Table Container */}
-      <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-xs rounded-2xl">
+      <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-sm rounded-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs whitespace-nowrap">
             <thead className="bg-[#FAF9F5] border-b border-slate-200/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">

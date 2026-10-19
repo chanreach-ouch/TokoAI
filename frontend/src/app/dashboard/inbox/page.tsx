@@ -133,7 +133,7 @@ export default function InboxPage() {
                 onClick={() => setActiveChatId(conv.id)}
                 className={`w-full text-left p-3 rounded-2xl flex flex-col gap-1.5 transition-all border ${
                   isSelected 
-                    ? 'bg-orange-50 border-orange-200/90 shadow-2xs' 
+                    ? 'bg-orange-50 border-orange-200/90 shadow-sm' 
                     : 'bg-white border-slate-200/60 hover:border-slate-300'
                 }`}
               >
@@ -184,7 +184,7 @@ export default function InboxPage() {
                 <ChevronLeft size={18} />
               </button>
               
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#EA580C] to-amber-500 flex items-center justify-center font-bold text-xs text-white shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#EA580C] to-amber-500 flex items-center justify-center font-bold text-xs text-white shadow-sm">
                 {activeMeta?.name.charAt(0) || 'C'}
               </div>
               <div>
@@ -217,19 +217,19 @@ export default function InboxPage() {
                 }`}
               >
                 {(msg.role === 'customer' || msg.role === 'user') ? (
-                  <div className="bg-white border border-slate-200/80 text-slate-800 text-xs md:text-sm p-4 rounded-2xl rounded-tl-xs shadow-2xs leading-relaxed">
+                  <div className="bg-white border border-slate-200/80 text-slate-800 text-xs md:text-sm p-4 rounded-2xl rounded-tl-xs shadow-sm leading-relaxed">
                     {msg.content}
                   </div>
                 ) : (
                   <div className="flex items-start gap-2.5">
-                    <div className="bg-white border-2 border-orange-200/90 text-slate-800 text-xs md:text-sm p-4 rounded-2xl rounded-tr-xs shadow-xs flex flex-col gap-2.5">
+                    <div className="bg-white border-2 border-orange-200/90 text-slate-800 text-xs md:text-sm p-4 rounded-2xl rounded-tr-xs shadow-sm flex flex-col gap-2.5">
                       <div className="flex items-center gap-1.5 text-[10px] text-[#EA580C] font-bold">
                         <Sparkles size={11} /> Spoken Khmer AI
                       </div>
                       <span className="leading-relaxed">{msg.content.replace(/khqr:\/\/bakong\/[a-zA-Z0-9-]+/g, '')}</span>
                       
                       {(msg.type === 'bakong' || msg.content.includes('khqr://bakong')) && (
-                        <div className="bg-[#FAF9F5] p-3.5 rounded-xl flex flex-col items-center mt-2 border border-slate-200 shadow-2xs text-center">
+                        <div className="bg-[#FAF9F5] p-3.5 rounded-xl flex flex-col items-center mt-2 border border-slate-200 shadow-sm text-center">
                           <div className="text-[#00938C] font-extrabold text-[11px] mb-1.5 flex items-center gap-1">
                             🇰🇭 BAKONG KHQR PAY
                           </div>
@@ -239,7 +239,7 @@ export default function InboxPage() {
                         </div>
                       )}
                     </div>
-                    <div className="w-7 h-7 rounded-lg bg-[#EA580C] flex items-center justify-center shrink-0 mt-1 shadow-2xs text-white">
+                    <div className="w-7 h-7 rounded-lg bg-[#EA580C] flex items-center justify-center shrink-0 mt-1 shadow-sm text-white">
                       <Bot size={14} />
                     </div>
                   </div>
@@ -271,7 +271,7 @@ export default function InboxPage() {
               <Button 
                 onClick={handleSendReply} 
                 variant="primary" 
-                className="absolute right-1.5 h-8 w-8 p-0 rounded-full shadow-2xs"
+                className="absolute right-1.5 h-8 w-8 p-0 rounded-full shadow-sm"
               >
                 <Send size={13} />
               </Button>

@@ -4,64 +4,49 @@
 
 @layer base {
   :root {
-    /* Default / Dark Theme: Vibrant Commerce (TikTok + Bakong) */
-    --background: 222 47% 7%;      /* #0A0E1A brand-ink */
-    --foreground: 210 33% 98%;     /* #FAFBFC brand-bone */
-    
-    --card: 222 33% 11%;           /* #131826 brand-ink-2 */
-    --card-foreground: 210 33% 98%;
-    
-    --popover: 222 33% 11%;
-    --popover-foreground: 210 33% 98%;
-    
-    --primary: 345 100% 61%;       /* #FF3B6B TikTok Pink */
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 222 25% 18%;      /* #222B3D Deep slate */
-    --secondary-foreground: 210 33% 98%;
-    
-    --muted: 222 20% 15%;          /* #1A2130 */
-    --muted-foreground: 217 19% 65%; /* Soft slate text */
-    
-    --accent: 173 90% 50%;         /* #14F1D9 TikTok Cyan */
-    --accent-foreground: 222 47% 7%;
-    
-    --destructive: 345 100% 61%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --border: 222 25% 16%;         /* #1E2638 Subtle slate border */
-    --input: 222 25% 16%;
-    --ring: 345 100% 61%;          /* Pink focus ring */
-    
-    --radius: 14px;
-    
-    --chart-1: 345 100% 61%; /* Pink */
-    --chart-2: 173 90% 50%; /* Cyan */
-    --chart-3: 176 100% 29%; /* Bakong Teal #00938C */
-    --chart-4: 217 19% 46%; /* Slate */
-    --chart-5: 45 93% 47%;  /* Amber */
-  }
+    /* === TokoAI Warm Executive Canvas (Single Source of Truth) === */
+    /* Surface layers */
+    --canvas:       40 50% 97%;    /* #FAF9F5 — warm parchment page bg */
+    --surface:      0 0% 100%;     /* #FFFFFF — card / panel white */
+    --surface-sub:  40 33% 95%;    /* #F5F2ED — subtle inset / row stripe */
 
-  .light {
-    --background: 220 33% 97%;     /* #F5F7FB brand-mist */
-    --foreground: 225 44% 7%;      /* #0A0E1A brand-ink */
-    --card: 210 33% 98%;           /* #FAFBFC brand-bone */
-    --card-foreground: 225 44% 7%;
-    --popover: 210 33% 98%;
-    --popover-foreground: 225 44% 7%;
-    --primary: 345 100% 61%;
+    /* Semantic Tailwind CSS vars (consumed by bg-background, text-foreground, etc.) */
+    --background:   40 50% 97%;    /* Warm ivory canvas */
+    --foreground:   222 47% 7%;    /* #0A0E1A charcoal slate text */
+
+    --card:         0 0% 100%;
+    --card-foreground: 222 47% 7%;
+
+    --popover:      0 0% 100%;
+    --popover-foreground: 222 47% 7%;
+
+    --primary:      24 90% 51%;    /* #EA580C burnt orange */
     --primary-foreground: 0 0% 100%;
-    --secondary: 226 23% 92%;
-    --secondary-foreground: 225 44% 7%;
-    --muted: 226 23% 92%;
-    --muted-foreground: 217 19% 46%;
-    --accent: 173 90% 50%;
-    --accent-foreground: 225 44% 7%;
-    --destructive: 345 100% 61%;
+
+    --secondary:    210 17% 95%;   /* #EEF1F5 — pale slate chip */
+    --secondary-foreground: 222 47% 7%;
+
+    --muted:        40 33% 95%;
+    --muted-foreground: 217 19% 46%; /* #6B7E9A */
+
+    --accent:       173 90% 30%;   /* #00938C Bakong teal */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive:  0 84% 60%;     /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
-    --border: 226 23% 90%;
-    --input: 226 23% 90%;
-    --ring: 345 100% 61%;
+
+    --border:       220 13% 91%;   /* #E4E7EF slate border */
+    --input:        220 13% 91%;
+    --ring:         24 90% 51%;    /* Orange focus ring */
+
+    --radius: 14px;
+
+    /* Chart tokens */
+    --chart-1: 24 90% 51%;   /* Orange */
+    --chart-2: 173 90% 30%;  /* Bakong teal */
+    --chart-3: 152 60% 40%;  /* Emerald */
+    --chart-4: 217 19% 46%;  /* Slate */
+    --chart-5: 45 93% 47%;   /* Amber */
   }
 }
 
@@ -69,56 +54,86 @@
   * {
     @apply border-border;
   }
+
+  html {
+    /* Force warm ivory on all surfaces, preventing dark-mode bleed */
+    background-color: hsl(40, 50%, 97%);
+    color: hsl(222, 47%, 7%);
+  }
+
   body {
-    @apply bg-background text-foreground antialiased selection:bg-brand-pink/30 selection:text-white;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     line-height: 1.6;
+    background-color: hsl(40, 50%, 97%); /* Warm ivory — explicit override */
+    color: hsl(222, 47%, 7%);
+    selection-color: #EA580C;
+  }
+
+  ::selection {
+    background-color: rgba(234, 88, 12, 0.15);
+    color: #EA580C;
   }
 }
 
-/* Custom Utilities for the Design System */
+/* ===== Custom Design System Utilities ===== */
 @layer utilities {
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-primary;
-  }
-
+  /* Khmer script — relaxed line-height to prevent diacritic clip */
   .font-khmer {
     font-family: 'Kantumruy Pro', 'Inter', sans-serif;
-    line-height: 1.75;
+    line-height: 1.85;
+    letter-spacing: 0.01em;
   }
 
-  .card-glow-pink {
-    box-shadow: 0 0 30px -5px rgba(255, 59, 107, 0.25);
+  /* Text gradient (landing page hero) */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #EA580C 0%, #F97316 40%, #FBBF24 100%);
   }
 
-  .card-glow-cyan {
-    box-shadow: 0 0 30px -5px rgba(20, 241, 217, 0.2);
+  /* Subtle ambient glow for orange accents */
+  .glow-orange {
+    box-shadow: 0 0 24px -4px rgba(234, 88, 12, 0.30);
   }
-  
-  /* Status dot pulse animation */
+
+  /* Bakong teal ambient glow */
+  .glow-teal {
+    box-shadow: 0 0 24px -4px rgba(0, 147, 140, 0.25);
+  }
+
+  /* Inset stripe for alternating table/list rows */
+  .row-stripe:nth-child(even) {
+    background-color: hsl(40, 33%, 96%);
+  }
+}
+
+/* ===== Animations ===== */
+@layer utilities {
   @keyframes ping-slow {
-    75%, 100% {
-      transform: scale(2);
-      opacity: 0;
-    }
+    75%, 100% { transform: scale(2.2); opacity: 0; }
   }
   .animate-ping-slow {
-    animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    animation: ping-slow 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, hsl(40,33%,96%) 25%, hsl(40,50%,99%) 50%, hsl(40,33%,96%) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
   }
 }
 
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ===== Scrollbars — warm chrome ===== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.12);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(234, 88, 12, 0.35);
 }

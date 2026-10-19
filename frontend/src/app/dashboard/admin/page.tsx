@@ -54,7 +54,7 @@ export default function AdminPage() {
           Loading platform tenants...
         </div>
       ) : (
-        <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-xs rounded-2xl">
+        <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-sm rounded-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-[#FAF9F5] border-b border-slate-200/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">

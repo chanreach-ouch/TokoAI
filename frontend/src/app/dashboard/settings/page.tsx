@@ -114,7 +114,7 @@ export default function SettingsPage() {
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
           <CreditCard size={14} className="text-[#EA580C]" /> Subscription & Quota
         </h2>
-        <Card className="p-6 border border-slate-200/80 bg-white shadow-xs rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Card className="p-6 border border-slate-200/80 bg-white shadow-sm rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold text-[#0F172A]">{tier} Merchant Tier</h3>
@@ -136,7 +136,7 @@ export default function SettingsPage() {
               </p>
             )}
           </div>
-          <Button variant="brand" className="text-xs h-9 px-4 shrink-0 shadow-xs">
+          <Button variant="primary" className="text-xs h-9 px-4 shrink-0">
             Upgrade via ABA Payway 🇰🇭
           </Button>
         </Card>
@@ -159,7 +159,7 @@ export default function SettingsPage() {
                 key={t.id} 
                 className={`p-4 cursor-pointer transition-all rounded-2xl ${
                   isSelected 
-                    ? 'border-2 border-[#EA580C] bg-orange-50/50 shadow-xs' 
+                    ? 'border-2 border-[#EA580C] bg-orange-50/50 shadow-sm' 
                     : 'border border-slate-200/80 bg-white hover:border-slate-300'
                 }`}
                 onClick={() => setTone(t.id)}
@@ -197,7 +197,7 @@ export default function SettingsPage() {
                 key={mode.id} 
                 className={`p-4 cursor-pointer transition-all flex items-center justify-between rounded-2xl ${
                   isSelected 
-                    ? 'border-2 border-emerald-600 bg-emerald-50/40 shadow-xs' 
+                    ? 'border-2 border-emerald-600 bg-emerald-50/40 shadow-sm' 
                     : 'border border-slate-200/80 bg-white hover:border-slate-300'
                 }`}
                 onClick={() => setAiTrustMode(mode.id)}
@@ -215,7 +215,7 @@ export default function SettingsPage() {
 
       {/* Dual Currency Switcher */}
       <div className="pt-6 border-t border-slate-200/80">
-        <div className="flex items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs">
+        <div className="flex items-center justify-between p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
           <div>
             <h3 className="text-xs font-bold text-[#0F172A]">Dual Currency Display ($USD / ៛KHR)</h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
@@ -240,7 +240,7 @@ export default function SettingsPage() {
           Invite team members to handle manual customer chat takeovers. Staff cannot access billing or integrations.
         </p>
         
-        <Card className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-3">
+        <Card className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-3">
           <div className="flex flex-col sm:flex-row gap-2.5">
             <Input 
               placeholder="Staff Email (e.g. staff@shop.com)" 
@@ -257,7 +257,7 @@ export default function SettingsPage() {
             />
             <Button 
               variant="primary" 
-              className="text-xs h-10 px-4 shrink-0 shadow-xs" 
+              className="text-xs h-10 px-4 shrink-0 shadow-sm" 
               onClick={handleInviteStaff}
               disabled={isInviting}
             >
@@ -269,10 +269,10 @@ export default function SettingsPage() {
 
       {/* Save Button */}
       <div className="pt-4">
-        <Button 
-          onClick={handleSave} 
-          variant="brand" 
-          className="w-full h-11 text-sm font-bold shadow-xs"
+        <Button
+          onClick={handleSave}
+          variant="primary"
+          className="w-full h-11 text-sm font-bold"
           disabled={isSaving}
         >
           {isSaving ? "Saving..." : "Save Settings & Update AI Core"}

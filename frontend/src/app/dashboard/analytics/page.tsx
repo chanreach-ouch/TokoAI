@@ -66,7 +66,7 @@ export default function AnalyticsPage() {
             Real-time attribution comparing autonomous AI closed revenue vs. manual admin staff replies.
           </p>
         </div>
-        <Button variant="secondary" className="h-9 text-xs gap-1.5 shadow-2xs" onClick={handleDownloadCSV}>
+        <Button variant="secondary" className="h-9 text-xs gap-1.5 shadow-sm" onClick={handleDownloadCSV}>
           <Download size={13} /> Export Report (CSV)
         </Button>
       </div>
@@ -74,7 +74,7 @@ export default function AnalyticsPage() {
       {/* Metrics Grid */}
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {MOCK_STATS.map((stat, i) => (
-          <Card key={i} className="p-5 flex flex-col justify-between gap-3 border border-slate-200/80 bg-white hover:border-slate-300 shadow-xs transition-all rounded-2xl">
+          <Card key={i} className="p-5 flex flex-col justify-between gap-3 border border-slate-200/80 bg-white hover:border-slate-300 shadow-sm transition-all rounded-2xl">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
             <h3 className="text-3xl font-black text-[#0F172A] tracking-tight tabular-nums">{stat.value}</h3>
             <div className="flex items-center text-xs">
@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Chart Section */}
-      <Card className="p-6 h-[440px] flex flex-col border border-slate-200/80 bg-white shadow-xs rounded-3xl">
+      <Card className="p-6 h-[440px] flex flex-col border border-slate-200/80 bg-white shadow-sm rounded-3xl">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-[#EA580C]">
@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
             <BarChart data={CHART_DATA} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value: any) => `$${value}`} />
+              <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value: any) => `$${(value/1000).toFixed(0)}k`} />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#FFFFFF', 
@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
               />
               <Legend wrapperStyle={{ paddingTop: '16px', fontSize: '11px', color: '#64748B' }} />
               <Bar dataKey="aiPilot" name="AI Auto-Pilot ($)" stackId="a" fill="#EA580C" radius={[0, 0, 4, 4]} />
-              <Bar dataKey="human" name="Human Admin ($)" stackId="a" fill="#94A3B8" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="human"   name="Human Admin ($)"   stackId="a" fill="#CBD5E1" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

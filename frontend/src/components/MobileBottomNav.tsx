@@ -36,7 +36,7 @@ export function MobileBottomNav() {
               {item.name}
             </span>
             {item.badge && (
-              <span className="absolute top-1.5 right-[28%] w-2 h-2 bg-[#EA580C] rounded-full shadow-2xs"></span>
+              <span className="absolute top-1.5 right-[28%] w-2 h-2 bg-[#EA580C] rounded-full shadow-sm"></span>
             )}
           </Link>
         );

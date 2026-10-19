@@ -56,10 +56,10 @@ export default function CustomersPage() {
           </p>
         </div>
         <div className="flex gap-2.5">
-          <Button variant="secondary" className="h-9 text-xs gap-1.5 shadow-2xs">
+          <Button variant="secondary" className="h-9 text-xs gap-1.5 shadow-sm">
             <Filter size={13} /> Filter Segment
           </Button>
-          <Button variant="brand" className="h-9 text-xs gap-1.5 shadow-xs" onClick={handleExport}>
+          <Button variant="brand" className="h-9 text-xs gap-1.5 shadow-sm" onClick={handleExport}>
             <Download size={13} /> Export CSV
           </Button>
         </div>
@@ -67,24 +67,24 @@ export default function CustomersPage() {
 
       {/* KPI Highlight Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Buyers</p>
           <p className="text-xl font-extrabold text-[#0F172A] mt-1 tabular-nums">{customers.length} Profiles</p>
           <span className="text-[10px] text-emerald-600 font-semibold mt-0.5 inline-block">100% Mobile Phone Validated</span>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total CRM LTV</p>
           <p className="text-xl font-extrabold text-[#0F172A] mt-1 tabular-nums">${totalLTV.toFixed(2)}</p>
           <span className="text-[10px] text-slate-500 font-medium mt-0.5 inline-block">៛{(totalLTV * 4000).toLocaleString()} KHR</span>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">VIP High-Spenders</p>
           <p className="text-xl font-extrabold text-[#EA580C] mt-1 tabular-nums">
             {customers.filter(c => c.isVIP).length} VIP Buyers
           </p>
           <span className="text-[10px] text-slate-500 font-medium mt-0.5 inline-block">&gt; 5 Completed Orders</span>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Primary Channel</p>
           <p className="text-xl font-extrabold text-[#0F172A] mt-1">TikTok Shop</p>
           <span className="text-[10px] text-sky-600 font-semibold mt-0.5 inline-block">Business DM Ingestion</span>
@@ -103,7 +103,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Customers Table */}
-      <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-xs rounded-2xl">
+      <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-sm rounded-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs whitespace-nowrap">
             <thead className="bg-[#FAF9F5] border-b border-slate-200/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">

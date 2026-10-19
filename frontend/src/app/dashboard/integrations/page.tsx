@@ -79,10 +79,10 @@ export default function IntegrationsPage() {
       </div>
       
       {/* TikTok Card */}
-      <Card className="p-6 space-y-4 border border-slate-200/80 bg-white shadow-xs rounded-3xl">
+      <Card className="p-6 space-y-4 border border-slate-200/80 bg-white shadow-sm rounded-3xl">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white font-black text-lg shadow-2xs">
+            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm">
               T
             </div>
             <div>
@@ -107,7 +107,7 @@ export default function IntegrationsPage() {
         </div>
         <Button 
           variant="primary" 
-          className="w-full text-xs h-9 shadow-xs" 
+          className="w-full text-xs h-9 shadow-sm" 
           onClick={handleUpdateTikTok}
           disabled={isSavingTikTok}
         >
@@ -116,10 +116,10 @@ export default function IntegrationsPage() {
       </Card>
 
       {/* Bakong Card */}
-      <Card className="p-6 space-y-4 border border-slate-200/80 bg-white shadow-xs rounded-3xl">
+      <Card className="p-6 space-y-4 border border-slate-200/80 bg-white shadow-sm rounded-3xl">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-center text-[#00938C] shadow-2xs">
+            <div className="w-10 h-10 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-center text-[#00938C] shadow-sm">
               <QrCode size={20} />
             </div>
             <div>
@@ -145,7 +145,7 @@ export default function IntegrationsPage() {
         </div>
         <Button 
           variant="brand" 
-          className="w-full text-xs h-9 shadow-xs" 
+          className="w-full text-xs h-9 shadow-sm" 
           onClick={handleUpdateBakong}
           disabled={isSavingBakong}
         >

@@ -113,12 +113,12 @@ export default function LandingPage() {
           {/* Right Header Utilities: Language + Auth CTAs */}
           <div className="flex items-center gap-3">
             {/* Language Switcher Pill */}
-            <div className="flex items-center bg-white p-1 rounded-full border border-slate-200/80 shadow-xs">
+            <div className="flex items-center bg-white p-1 rounded-full border border-slate-200/80 shadow-sm">
               <button
                 onClick={() => setLang("en")}
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all ${
                   lang === "en" 
-                    ? "bg-[#0F172A] text-white shadow-xs" 
+                    ? "bg-[#0F172A] text-white shadow-sm" 
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
@@ -128,7 +128,7 @@ export default function LandingPage() {
                 onClick={() => setLang("kh")}
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all ${
                   lang === "kh" 
-                    ? "bg-[#EA580C] text-white shadow-xs font-khmer" 
+                    ? "bg-[#EA580C] text-white shadow-sm font-khmer" 
                     : "text-slate-500 hover:text-slate-900 font-khmer"
                 }`}
               >
@@ -239,15 +239,15 @@ export default function LandingPage() {
 
         {/* Feature Check Pills (From Active reference) */}
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-8 text-xs font-semibold text-slate-700">
-          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-xs">
+          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
             <CheckCircle2 size={15} className="text-[#EA580C]" />
             <span>{lang === "en" ? "Spoken Khmer & Romanized Slang" : "យល់ភាសានិយាយ & អក្សរឡាតាំង"}</span>
           </div>
-          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-xs">
+          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
             <CheckCircle2 size={15} className="text-[#EA580C]" />
             <span>{lang === "en" ? "Dynamic Bakong KHQR Checkout" : "បង្កើត Bakong KHQR ស្វ័យប្រវត្ត"}</span>
           </div>
-          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-xs">
+          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200/80 shadow-sm">
             <CheckCircle2 size={15} className="text-[#EA580C]" />
             <span>{lang === "en" ? "1-Tap J&T & VET Dispatch" : "ចេញវិក្កយបត្រ J&T & VET ភ្លាមៗ"}</span>
           </div>
@@ -262,7 +262,7 @@ export default function LandingPage() {
             </button>
           </Link>
           <a href="#demo">
-            <button className="h-13 px-7 rounded-full text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-xs transition-all flex items-center gap-2">
+            <button className="h-13 px-7 rounded-full text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200/90 shadow-sm transition-all flex items-center gap-2">
               <Play size={14} className="fill-[#EA580C] text-[#EA580C]" />
               <span>{lang === "en" ? "Try Live Inference Demo" : "សាកល្បង Demo ផ្ទាល់"}</span>
             </button>
@@ -310,7 +310,7 @@ export default function LandingPage() {
                 onClick={() => setIsHumanTakeover(!isHumanTakeover)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
                   isHumanTakeover 
-                    ? "bg-rose-500 text-white shadow-xs" 
+                    ? "bg-rose-500 text-white shadow-sm" 
                     : "bg-slate-100 hover:bg-slate-200 text-slate-700"
                 }`}
               >
@@ -340,7 +340,7 @@ export default function LandingPage() {
                   onClick={() => { setActiveScenario("midnight"); setSimPaid(false); }}
                   className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap ${
                     activeScenario === "midnight"
-                      ? "bg-[#EA580C] text-white shadow-xs"
+                      ? "bg-[#EA580C] text-white shadow-sm"
                       : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
                   }`}
                 >
@@ -352,7 +352,7 @@ export default function LandingPage() {
                   onClick={() => { setActiveScenario("khmeringlish"); setSimPaid(false); }}
                   className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap ${
                     activeScenario === "khmeringlish"
-                      ? "bg-[#EA580C] text-white shadow-xs"
+                      ? "bg-[#EA580C] text-white shadow-sm"
                       : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
                   }`}
                 >
@@ -363,7 +363,7 @@ export default function LandingPage() {
                   onClick={() => { setActiveScenario("khqr"); setSimPaid(false); }}
                   className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap ${
                     activeScenario === "khqr"
-                      ? "bg-[#EA580C] text-white shadow-xs"
+                      ? "bg-[#EA580C] text-white shadow-sm"
                       : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
                   }`}
                 >
@@ -377,7 +377,7 @@ export default function LandingPage() {
                 
                 {/* 1. Inbound Customer Turn */}
                 <div className="flex justify-end">
-                  <div className="max-w-[85%] bg-white rounded-2xl rounded-tr-xs border border-slate-200/80 p-3.5 shadow-xs">
+                  <div className="max-w-[85%] bg-white rounded-2xl rounded-tr-xs border border-slate-200/80 p-3.5 shadow-sm">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
                       <span className="font-bold text-[#EA580C]">@vicheka_99</span>
                       <span>1:15 AM</span>
@@ -404,7 +404,7 @@ export default function LandingPage() {
 
                 {/* 3. TokoAI Outbound Agent Reply */}
                 <div className="flex justify-start">
-                  <div className="max-w-[90%] bg-white rounded-2xl rounded-tl-xs border border-slate-200/90 p-4 shadow-xs space-y-3">
+                  <div className="max-w-[90%] bg-white rounded-2xl rounded-tl-xs border border-slate-200/90 p-4 shadow-sm space-y-3">
                     <div className="flex items-center justify-between text-[11px] text-slate-500">
                       <span className="font-bold text-slate-900 flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-[#EA580C]" />
@@ -465,7 +465,7 @@ export default function LandingPage() {
                             {!simPaid ? (
                               <button
                                 onClick={() => setSimPaid(true)}
-                                className="mt-2 px-3 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-[#EA580C] to-amber-500 hover:opacity-95 shadow-xs transition-all flex items-center gap-1.5"
+                                className="mt-2 px-3 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-[#EA580C] to-amber-500 hover:opacity-95 shadow-sm transition-all flex items-center gap-1.5"
                               >
                                 <Zap size={12} />
                                 <span>Simulate ABA Mobile Payment Scan</span>
@@ -647,7 +647,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           
           {/* Card 1: Real Time Analytics */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
             <div className="space-y-4">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C]">
                 <BarChart3 size={20} />
@@ -679,7 +679,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 2: Native Spoken Khmer & Slang */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
             <div className="space-y-4">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C]">
                 <MessageSquare size={20} />
@@ -710,7 +710,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 3: Team Collaboration & Staff RBAC */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
             <div className="space-y-4">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C]">
                 <Users size={20} />
@@ -752,7 +752,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Card 4: Dynamic Bakong KHQR Settlement */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-7 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-7 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
             <div className="space-y-3">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C]">
                 <QrCode size={20} />
@@ -779,7 +779,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 5: Automated Cambodian Logistics & Dispatch */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-7 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-7 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
             <div className="space-y-3">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C]">
                 <Truck size={20} />
@@ -845,19 +845,19 @@ export default function LandingPage() {
 
             {/* Pill Tags (From Active Reference) */}
             <div className="flex flex-wrap gap-2 pt-2">
-              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-2xs">
+              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-sm">
                 Robust Security
               </span>
-              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-2xs">
+              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-sm">
                 Customizable
               </span>
-              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-2xs">
+              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-sm">
                 Bakong Certified
               </span>
-              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-2xs">
+              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-sm">
                 Automated Efficiency
               </span>
-              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-2xs">
+              <span className="px-3 py-1 rounded-full bg-white border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-sm">
                 Zero Human Lag
               </span>
             </div>
@@ -866,7 +866,7 @@ export default function LandingPage() {
           {/* Right Column: Icon Feature List (From Active Reference) */}
           <div className="lg:col-span-7 space-y-6">
             
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-xs">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C] shrink-0 mt-0.5">
                 <Sparkles size={20} />
               </div>
@@ -882,7 +882,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-xs">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C] shrink-0 mt-0.5">
                 <Zap size={20} />
               </div>
@@ -898,7 +898,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-xs">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C] shrink-0 mt-0.5">
                 <Sliders size={20} />
               </div>
@@ -914,7 +914,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-xs">
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-200/70 shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#EA580C] shrink-0 mt-0.5">
                 <DollarSign size={20} />
               </div>
@@ -956,12 +956,12 @@ export default function LandingPage() {
           {/* Currency Toggle */}
           <div className="pt-3 flex items-center justify-center gap-2">
             <span className="text-xs font-semibold text-slate-500">Currency:</span>
-            <div className="inline-flex bg-white p-1 rounded-full border border-slate-200 shadow-xs">
+            <div className="inline-flex bg-white p-1 rounded-full border border-slate-200 shadow-sm">
               <button
                 onClick={() => setCurrency("USD")}
                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                   currency === "USD" 
-                    ? "bg-[#0F172A] text-white shadow-xs" 
+                    ? "bg-[#0F172A] text-white shadow-sm" 
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -971,7 +971,7 @@ export default function LandingPage() {
                 onClick={() => setCurrency("KHR")}
                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                   currency === "KHR" 
-                    ? "bg-[#EA580C] text-white shadow-xs" 
+                    ? "bg-[#EA580C] text-white shadow-sm" 
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -1130,7 +1130,7 @@ export default function LandingPage() {
               className="w-12 h-6 bg-slate-200 rounded-full p-1 relative transition-colors"
             >
               <div 
-                className={`w-4 h-4 rounded-full bg-[#EA580C] shadow-xs transition-transform ${
+                className={`w-4 h-4 rounded-full bg-[#EA580C] shadow-sm transition-transform ${
                   isAnnual ? "translate-x-6" : "translate-x-0"
                 }`}
               />
@@ -1145,7 +1145,7 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           
           {/* Tier 1: Free Starter */}
-          <div className="rounded-3xl bg-white border border-slate-200/90 p-8 flex flex-col justify-between space-y-6 shadow-xs hover:shadow-md transition-all">
+          <div className="rounded-3xl bg-white border border-slate-200/90 p-8 flex flex-col justify-between space-y-6 shadow-sm hover:shadow-md transition-all">
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-[#0F172A]">Starter Trial</h3>
               <p className="text-xs text-slate-500">Perfect for small test shops getting started on TikTok.</p>
@@ -1178,7 +1178,7 @@ export default function LandingPage() {
 
           {/* Tier 2: Pro Retailer (Highlighted) */}
           <div className="rounded-3xl bg-white border-2 border-[#EA580C] p-8 flex flex-col justify-between space-y-6 relative shadow-[0_20px_50px_rgba(234,88,12,0.12)] scale-105 z-10">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#EA580C] text-white text-[10px] font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider shadow-xs">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#EA580C] text-white text-[10px] font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
               Most Popular
             </div>
 
@@ -1216,7 +1216,7 @@ export default function LandingPage() {
           </div>
 
           {/* Tier 3: Live Stream Powerhouse */}
-          <div className="rounded-3xl bg-white border border-slate-200/90 p-8 flex flex-col justify-between space-y-6 shadow-xs hover:shadow-md transition-all">
+          <div className="rounded-3xl bg-white border border-slate-200/90 p-8 flex flex-col justify-between space-y-6 shadow-sm hover:shadow-md transition-all">
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-[#0F172A]">Scale Merchant</h3>
               <p className="text-xs text-slate-500">For high-traffic live stream retailers & multi-shops.</p>
@@ -1292,7 +1292,7 @@ export default function LandingPage() {
                 : "TokoAI មានប្រព័ន្ធការពារសុវត្ថិភាព។ ប្រសិនបើសំណួរមិនមានក្នុងទិន្នន័យទំនិញ AI នឹងឆ្លើយតបយ៉ាងគួរសមឱ្យរង់ចាំបុគ្គលិក និងផ្ញើសារជូនដំណឹងទៅកាន់អ្នកភ្លាមៗ។"
             }
           ].map((faq, idx) => (
-            <div key={idx} className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
+            <div key={idx} className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
               <button
                 onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                 className="w-full p-5 text-left flex items-center justify-between font-bold text-sm text-[#0F172A] hover:text-[#EA580C] transition-colors"

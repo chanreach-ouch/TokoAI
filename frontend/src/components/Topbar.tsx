@@ -13,13 +13,13 @@ export function Topbar() {
       {/* Left: Mobile Brand / Desktop Search */}
       <div className="flex items-center gap-3">
         <div className="flex md:hidden items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#EA580C] to-[#F97316] text-white font-bold text-xs shadow-xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#EA580C] to-[#F97316] text-white font-bold text-xs shadow-sm">
             T
           </div>
           <span className="font-extrabold text-sm text-[#0F172A]">TokoAI</span>
         </div>
 
-        <div className="hidden md:flex items-center bg-slate-50 rounded-full px-3.5 py-1.5 border border-slate-200/80 focus-within:border-[#EA580C] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#EA580C]/15 transition-all w-80 shadow-2xs">
+        <div className="hidden md:flex items-center bg-slate-50 rounded-full px-3.5 py-1.5 border border-slate-200/80 focus-within:border-[#EA580C] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#EA580C]/15 transition-all w-80 shadow-sm">
           <Search className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
           <input 
             type="text" 
@@ -33,7 +33,7 @@ export function Topbar() {
       <div className="flex items-center gap-2.5 md:gap-4">
         
         {/* Global AI Autonomous Status */}
-        <div className="flex items-center gap-2 bg-white border border-slate-200/80 px-3 py-1.5 rounded-full shadow-2xs">
+        <div className="flex items-center gap-2 bg-white border border-slate-200/80 px-3 py-1.5 rounded-full shadow-sm">
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-2 w-2">
               {isAiActive && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>}
@@ -52,23 +52,23 @@ export function Topbar() {
         </div>
 
         {/* Bakong Partner Badge */}
-        <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-bold text-[#00938C] bg-teal-50 border border-teal-200/80 px-3 py-1.5 rounded-full shadow-2xs">
+        <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-bold text-[#00938C] bg-teal-50 border border-teal-200/80 px-3 py-1.5 rounded-full shadow-sm">
           <ShieldCheck size={14} /> Bakong Connected
         </div>
 
         {/* Language Toggle */}
         <button 
           onClick={() => setIsKhmer(!isKhmer)}
-          className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200/80 px-3 py-1.5 rounded-full hover:border-slate-300 shadow-2xs transition-all"
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200/80 px-3 py-1.5 rounded-full hover:border-slate-300 shadow-sm transition-all"
         >
           <Globe className="w-3.5 h-3.5 text-[#EA580C]" />
-          <span>{isKhmer ? "KH 🇰🇭" : "EN 🇺🇸"}</span>
+          <span>{isKhmer ? "KH" : "EN"}</span>
         </button>
 
         {/* Notifications */}
-        <button className="relative p-2 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:text-slate-900 hover:border-slate-300 shadow-2xs transition-all">
+        <button className="relative p-2 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:text-slate-900 hover:border-slate-300 shadow-sm transition-all">
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EA580C] rounded-full shadow-xs"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EA580C] rounded-full shadow-sm"></span>
         </button>
       </div>
     </header>
