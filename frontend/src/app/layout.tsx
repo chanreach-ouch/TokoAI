@@ -9,6 +9,7 @@ import "@fontsource/kantumruy-pro/600.css";
 import "@fontsource/kantumruy-pro/700.css";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/context/ToastContext";
 
 export const metadata: Metadata = {
   title: "TokoAI - 24/7 AI Sales Agent",
@@ -24,7 +25,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

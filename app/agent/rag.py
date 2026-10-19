@@ -15,7 +15,16 @@ async def retrieve_relevant_products(query: str, session, shop_id, top_k=2):
         )
         query_embedding = response.embeddings[0].values
         
-        stmt = select(Product).where(Product.shop_id == shop_id).order_by(Product.embedding.cosine_distance(query_embedding)).limit(top_k)
+        from app.models.shop import Shop
+        # Look up the shop's owner to get the seller_id
+        shop_stmt = select(Shop).where(Shop.id == shop_id)
+        shop_res = await session.execute(shop_stmt)
+        shop = shop_res.scalar_one_or_none()
+        
+        if not shop:
+            return []
+            
+        stmt = select(Product).where(Product.seller_id == shop.owner_id).order_by(Product.embedding.cosine_distance(query_embedding)).limit(top_k)
         result = await session.execute(stmt)
         return result.scalars().all()
     except Exception as e:
@@ -77,8 +86,12 @@ async def run_agent(sender_id: str, shop_id, message_text: str, memory: list[str
                     user_id = 1
                     import uuid
                     
-                    # Look up product price
-                    stmt = select(Product).where(Product.sku == sku, Product.shop_id == shop_id)
+                    # Look up product price using the shop's owner_id
+                    shop_stmt = select(Shop).where(Shop.id == shop_id)
+                    shop_res = await session.execute(shop_stmt)
+                    shop = shop_res.scalar_one_or_none()
+                    
+                    stmt = select(Product).where(Product.sku == sku, Product.seller_id == shop.owner_id)
                     p_res = await session.execute(stmt)
                     prod = p_res.scalar_one_or_none()
                     

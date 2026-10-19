@@ -24,8 +24,8 @@ async def recreate():
         
         await conn.execute(
             text("""
-                INSERT INTO sellers (id, email, hashed_password, is_superadmin, is_active, bot_tone, ai_token_usage, created_at) 
-                VALUES (:id, :email, :pw, true, true, 'Professional', 0, NOW())
+                INSERT INTO sellers (id, email, hashed_password, role, is_superadmin, is_active, bot_tone, ai_trust_mode, ai_token_usage, ai_message_limit, subscription_tier, created_at) 
+                VALUES (:id, :email, :pw, 'OWNER', true, true, 'Professional', 'BALANCED', 0, 50, 'FREE', NOW())
             """),
             {"id": admin_id, "email": "admin@tokoai.com", "pw": hashed_pw}
         )

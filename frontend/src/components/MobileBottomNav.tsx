@@ -2,35 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, ShoppingBag, BarChart3, CreditCard, MoreHorizontal } from "lucide-react";
+import { LayoutDashboard, MessageSquare, ShoppingBag, BookOpen, Settings } from "lucide-react";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: "Inbox", href: "/dashboard/inbox", icon: MessageSquare, badge: true },
-    { name: "Shop", href: "/dashboard/knowledge-base", icon: ShoppingBag },
-    { name: "Stats", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "Pay", href: "/dashboard/payments", icon: CreditCard },
-    { name: "More", href: "/dashboard/settings", icon: MoreHorizontal },
+    { name: "Cockpit", href: "/dashboard", icon: LayoutDashboard, exact: true },
+    { name: "Inbox", href: "/dashboard/inbox", icon: MessageSquare, badge: "3" },
+    { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+    { name: "Catalog", href: "/dashboard/knowledge-base", icon: BookOpen },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-brand-line z-50 flex items-center justify-around px-2 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 z-50 flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] select-none">
       {navItems.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard');
+        const isActive = item.exact 
+          ? pathname === item.href 
+          : pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard');
 
         return (
-          <Link key={item.name} href={item.href} className="flex flex-col items-center justify-center w-full h-full relative">
-            <div className={`p-1 rounded-xl mb-1 ${isActive ? 'bg-brand-pink/10' : ''}`}>
-              <Icon className={`w-5 h-5 ${isActive ? 'text-brand-pink' : 'text-brand-muted'}`} />
+          <Link 
+            key={item.name} 
+            href={item.href} 
+            className="flex flex-col items-center justify-center w-full h-full relative py-1"
+          >
+            <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'bg-orange-50 text-[#EA580C]' : 'text-slate-400'}`}>
+              <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[#EA580C]' : 'text-slate-400'}`} />
             </div>
-            <span className={`text-[10px] font-medium ${isActive ? 'text-brand-pink' : 'text-brand-muted'}`}>
+            <span className={`text-[10px] transition-colors mt-0.5 ${isActive ? 'text-[#0F172A] font-bold' : 'text-slate-400 font-medium'}`}>
               {item.name}
             </span>
             {item.badge && (
-              <div className="absolute top-2 right-1/4 w-2 h-2 bg-brand-pink rounded-full border border-white"></div>
+              <span className="absolute top-1.5 right-[28%] w-2 h-2 bg-[#EA580C] rounded-full shadow-2xs"></span>
             )}
           </Link>
         );

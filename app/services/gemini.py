@@ -17,7 +17,7 @@ def embed_text(text: str) -> list[float]:
         return [0.0] * 768
     
     result = genai.embed_content(
-        model="models/text-embedding-004",
+        model="models/embedding-001",
         content=text,
         task_type="retrieval_document"
     )
@@ -28,7 +28,7 @@ def embed_query(text: str) -> list[float]:
         return [0.0] * 768
         
     result = genai.embed_content(
-        model="models/text-embedding-004",
+        model="models/embedding-001",
         content=text,
         task_type="retrieval_query"
     )
