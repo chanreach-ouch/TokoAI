@@ -155,26 +155,60 @@ export default function KnowledgeBasePage() {
 
       {activeTab === 'products' && (
         <div className="space-y-6">
-          {/* Vision Upload Card */}
-          <Card 
-            className="p-8 border-2 border-dashed border-slate-300/80 hover:border-[#EA580C] transition-all flex flex-col items-center justify-center text-center cursor-pointer bg-[#FAF9F5] hover:bg-orange-50/20 group rounded-3xl shadow-sm" 
+          {/* Multimodal Vision Intake Dock */}
+          <div 
             onClick={() => fileInputRef.current?.click()}
+            className="p-6 md:p-8 bg-white border border-[#E4E7EF] hover:border-[#EA580C]/80 transition-all rounded-3xl shadow-sm hover:shadow-md cursor-pointer group"
           >
             <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" />
-            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/80 group-hover:border-[#EA580C]/40 flex items-center justify-center mb-3 transition-colors shadow-sm">
-              {isUploading ? (
-                <Bot size={22} className="text-[#EA580C] animate-pulse" />
-              ) : (
-                <UploadCloud size={22} className="text-slate-500 group-hover:text-[#EA580C] transition-colors" />
-              )}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-200/80 flex items-center justify-center text-[#EA580C] shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                  {isUploading ? (
+                    <Bot size={26} className="animate-pulse" />
+                  ) : (
+                    <Sparkles size={26} />
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-[#0F172A]">
+                      {isUploading ? "Gemini 2.5 Vision Scanning Live Stream Photo..." : "Multimodal Vision Catalog Ingestion"}
+                    </h3>
+                    <span className="text-[10px] font-bold bg-teal-50 text-[#00938C] px-2 py-0.5 rounded-full border border-teal-200">
+                      OCR + 768d Vector
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
+                    Upload TikTok live stream screenshots, product photos, or handwritten Khmer price tags. 
+                    Vision AI automatically extracts product title, size options, and prices in USD or KHR, then indexes 768-dimensional vector embeddings bounded to your shop.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0">
+                <button className="h-10 px-5 rounded-xl bg-[#EA580C] hover:bg-[#C2410C] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 w-full md:w-auto shadow-sm">
+                  <UploadCloud size={15} /> Select Product Image
+                </button>
+              </div>
+
             </div>
-            <h3 className="text-sm font-bold text-[#0F172A]">
-              {isUploading ? "Gemini 2.5 Vision scanning product photo..." : "Drop Product Photo or Click to Upload"}
-            </h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">
-              Our Vision AI automatically extracts name, specs, price in KHR/USD, and seeds 768-dimensional vector embeddings.
-            </p>
-          </Card>
+
+            {/* Supported Input Formats Strip */}
+            <div className="mt-5 pt-4 border-t border-[#FAF9F5] flex items-center gap-3 text-[11px] text-slate-400 flex-wrap">
+              <span className="font-bold uppercase tracking-wider text-slate-500 text-[10px]">Optimized For:</span>
+              <span className="px-2 py-0.5 rounded-md bg-[#FAF9F5] border border-[#E4E7EF] text-slate-600 font-medium">
+                TikTok Live Stream Frames
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-[#FAF9F5] border border-[#E4E7EF] text-slate-600 font-medium">
+                Handwritten Khmer Price Notes
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-[#FAF9F5] border border-[#E4E7EF] text-slate-600 font-medium">
+                Supplier WeChat / Telegram Photos
+              </span>
+            </div>
+          </div>
 
           {/* Product Grid */}
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -188,15 +222,23 @@ export default function KnowledgeBasePage() {
                 <div className="h-40 bg-slate-50 flex items-center justify-center overflow-hidden border-b border-slate-100">
                   {p.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`http://localhost:8000${p.image_url}`} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img 
+                      src={p.image_url.startsWith('http') ? p.image_url : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace('/api/v1', '')}${p.image_url}`} 
+                      alt={p.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                    />
                   ) : (
                     <span className="text-4xl opacity-50">🛍️</span>
                   )}
                 </div>
                 <div className="p-3.5 bg-white">
-                  <p className="text-xs font-bold text-[#0F172A] truncate">{p.name}</p>
-                  <div className="flex justify-between mt-2 items-center">
-                    <p className="text-xs font-extrabold text-[#EA580C] tabular-nums">${p.price}</p>
+                  <p className="text-xs font-bold text-[#0F172A] truncate">{p.name_kh || p.name}</p>
+                  {p.sku && <p className="text-[10px] font-mono text-slate-400 font-bold">{p.sku}</p>}
+                  <div className="flex justify-between mt-2 items-end">
+                    <div>
+                      <p className="text-xs font-extrabold text-[#EA580C] tabular-nums">${Number(p.price).toFixed(2)}</p>
+                      <span className="text-[9px] text-slate-400 font-mono block">៛{Math.round(Number(p.price) * 4100).toLocaleString()}</span>
+                    </div>
                     <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
                       Stock: {p.stock}
                     </span>

@@ -14,9 +14,12 @@ from app.models.base import Base
 # Import all models so they register with Base.metadata
 import app.models.shop
 import app.models.seller
+import app.models.product
 import app.models.order
 import app.models.chat
 import app.models.customer
+import app.models.user
+import app.models.faq
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -46,7 +46,13 @@ export default function AnalyticsPage() {
   const MOCK_STATS = [
     { label: "Conversations Handled", value: stats.total_chats.toLocaleString(), trend: "+14.8%", isPositive: true },
     { label: "Active AI Catalog SKUs", value: stats.total_products.toLocaleString(), trend: "+4.1%", isPositive: true },
-    { label: "AI-Closed Revenue", value: `$${stats.total_sales_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, trend: "+28.4%", isPositive: true },
+    { 
+      label: "AI-Closed Revenue", 
+      value: `$${stats.total_sales_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, 
+      khr: `៛${Math.round(stats.total_sales_usd * 4100).toLocaleString()} KHR`,
+      trend: "+28.4%", 
+      isPositive: true 
+    },
     { label: "AI Tokens Invested", value: stats.tokens_used.toLocaleString(), trend: "-6.2% efficiency", isPositive: true },
   ];
 
@@ -76,7 +82,10 @@ export default function AnalyticsPage() {
         {MOCK_STATS.map((stat, i) => (
           <Card key={i} className="p-5 flex flex-col justify-between gap-3 border border-slate-200/80 bg-white hover:border-slate-300 shadow-sm transition-all rounded-2xl">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
-            <h3 className="text-3xl font-black text-[#0F172A] tracking-tight tabular-nums">{stat.value}</h3>
+            <div>
+              <h3 className="text-3xl font-black text-[#0F172A] tracking-tight tabular-nums">{stat.value}</h3>
+              {stat.khr && <span className="text-[11px] text-slate-500 font-mono mt-0.5 block">{stat.khr}</span>}
+            </div>
             <div className="flex items-center text-xs">
               <span className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${
                 stat.isPositive ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/60' : 'text-rose-700 bg-rose-50 border border-rose-200/60'

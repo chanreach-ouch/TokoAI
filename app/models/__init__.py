@@ -6,3 +6,4 @@ from app.models.product import Product
 from app.models.order import Order
 from app.models.chat import Conversation, Message
 from app.models.faq import FAQ
+from app.models.customer import Customer

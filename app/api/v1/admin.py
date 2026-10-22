@@ -26,6 +26,7 @@ async def get_all_sellers(admin_id: str = Depends(get_superadmin), db: AsyncSess
     ]
 
 @router.post("/sellers/{seller_id}/toggle-suspend", summary="Suspend or reactivate a seller")
+@router.post("/sellers/{seller_id}/toggle-status", summary="Suspend or reactivate a seller (alias)")
 async def toggle_suspend_seller(seller_id: str, admin_id: str = Depends(get_superadmin), db: AsyncSession = Depends(get_db)):
     # Prevent admin from suspending themselves
     if seller_id == admin_id:

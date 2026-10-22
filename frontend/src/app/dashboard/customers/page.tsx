@@ -13,18 +13,31 @@ export default function CustomersPage() {
   const toast = useToast();
 
   const mockCustomers = [
-    { id: "CUST-001", name: "Sokha Ry", phone: "012 884 921", platform: "TikTok Shop", orders: 4, ltv: 125.50, lastActive: "10 mins ago", isVIP: false },
-    { id: "CUST-002", name: "Bopha Meas", phone: "015 332 990", platform: "TikTok Shop", orders: 1, ltv: 15.00, lastActive: "2 hours ago", isVIP: false },
-    { id: "CUST-003", name: "Vibol Keo", phone: "098 771 204", platform: "TikTok Shop", orders: 12, ltv: 450.00, lastActive: "1 day ago", isVIP: true },
-    { id: "CUST-004", name: "Sreypich Tim", phone: "089 443 118", platform: "TikTok Shop", orders: 2, ltv: 45.00, lastActive: "3 days ago", isVIP: false },
-    { id: "CUST-005", name: "Channary Tep", phone: "077 551 883", platform: "TikTok Shop", orders: 6, ltv: 210.00, lastActive: "5 hours ago", isVIP: true },
+    { id: "CUST-001", name: "Sokha Ry", phone: "012 884 921", carrier: "Cellcard", landmark: "Toul Kork, Phnom Penh", platform: "TikTok Shop", orders: 4, ltv: 125.50, lastActive: "10 mins ago", isVIP: false },
+    { id: "CUST-002", name: "Bopha Meas", phone: "015 332 990", carrier: "Smart", landmark: "BKK1, Phnom Penh", platform: "TikTok Shop", orders: 1, ltv: 15.00, lastActive: "2 hours ago", isVIP: false },
+    { id: "CUST-003", name: "Vibol Keo", phone: "098 771 204", carrier: "Metfone", landmark: "Wat Bo, Siem Reap", platform: "TikTok Shop", orders: 12, ltv: 450.00, lastActive: "1 day ago", isVIP: true },
+    { id: "CUST-004", name: "Sreypich Tim", phone: "089 443 118", carrier: "Cellcard", landmark: "Chroy Changvar, Phnom Penh", platform: "TikTok Shop", orders: 2, ltv: 45.00, lastActive: "3 days ago", isVIP: false },
+    { id: "CUST-005", name: "Channary Tep", phone: "077 551 883", carrier: "Cellcard", landmark: "Svay Por, Battambang", platform: "TikTok Shop", orders: 6, ltv: 210.00, lastActive: "5 hours ago", isVIP: true },
   ];
 
   useEffect(() => {
-    setTimeout(() => {
-      setCustomers(mockCustomers);
-      setIsLoading(false);
-    }, 400);
+    const fetchCustomers = async () => {
+      setIsLoading(true);
+      try {
+        const res = await api.get("/seller/customers");
+        if (res.data && res.data.length > 0) {
+          setCustomers(res.data);
+        } else {
+          setCustomers(mockCustomers);
+        }
+      } catch (err) {
+        console.warn("Using fallback customer demo records:", err);
+        setCustomers(mockCustomers);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCustomers();
   }, []);
 
   const handleExport = () => {
@@ -146,9 +159,15 @@ export default function CustomersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 font-mono font-semibold text-slate-800">
-                      <span className="inline-flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 text-xs">
-                        🇰🇭 {customer.phone}
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-xs text-[#0F172A]">{customer.phone}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-[#FAF9F5] border border-[#E4E7EF] text-slate-700">
+                          {customer.carrier}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-khmer block mt-0.5 truncate max-w-xs">
+                        📍 {customer.landmark}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
@@ -162,15 +181,18 @@ export default function CustomersPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex flex-col">
                         <span className="text-emerald-700 font-extrabold tabular-nums">${customer.ltv.toFixed(2)}</span>
-                        <span className="text-[10px] text-slate-400">៛{(customer.ltv * 4000).toLocaleString()}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">៛{(customer.ltv * 4000).toLocaleString()}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-slate-500">{customer.lastActive}</td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Button variant="secondary" className="h-7 px-2.5 text-[11px] gap-1 hover:bg-slate-200/60">
-                          <MessageCircle size={11} /> Chat
-                        </Button>
+                        <a 
+                          href="/dashboard/inbox" 
+                          className="h-7 px-2.5 rounded-lg bg-orange-50 hover:bg-[#EA580C] text-[#EA580C] hover:text-white border border-orange-200 text-[11px] font-bold transition-all flex items-center gap-1 shadow-xs"
+                        >
+                          <MessageCircle size={11} /> Co-Pilot
+                        </a>
                       </div>
                     </td>
                   </tr>

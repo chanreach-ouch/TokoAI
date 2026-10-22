@@ -14,9 +14,15 @@ async def test_retrieve_relevant_products():
             self.stock_qty = 1
             
     mock_session = AsyncMock()
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [MockProduct("KZ-CASTOR-PRO")]
-    mock_session.execute.return_value = mock_result
+    mock_result_shop = MagicMock()
+    mock_shop = MagicMock()
+    mock_shop.owner_id = "00000000-0000-0000-0000-000000000000"
+    mock_result_shop.scalar_one_or_none.return_value = mock_shop
+    
+    mock_result_products = MagicMock()
+    mock_result_products.scalars.return_value.all.return_value = [MockProduct("KZ-CASTOR-PRO")]
+    
+    mock_session.execute.side_effect = [mock_result_shop, mock_result_products]
     
     with patch("app.agent.rag.client.models.embed_content") as mock_embed:
         class MockEmbedding:
@@ -26,6 +32,6 @@ async def test_retrieve_relevant_products():
         
         mock_embed.return_value = MockResponse()
         
-        products = await retrieve_relevant_products("Castor Pro", mock_session)
+        products = await retrieve_relevant_products("Castor Pro", mock_session, "00000000-0000-0000-0000-000000000000")
         assert len(products) == 1
         assert products[0].sku == "KZ-CASTOR-PRO"

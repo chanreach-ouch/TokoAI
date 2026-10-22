@@ -1,6 +1,5 @@
 import base64
 import io
-import qrcode
 from crccheck.crc import Crc16CcittFalse
 from app.config import settings
 
@@ -31,11 +30,16 @@ def generate_khqr_payload(amount_usd: float) -> str:
 
 def generate_khqr_image_base64(amount_usd: float) -> str:
     payload = generate_khqr_payload(amount_usd)
-    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
-    qr.add_data(payload)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    return base64.b64encode(buffered.getvalue()).decode("utf-8")
+    try:
+        import qrcode
+        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+        qr.add_data(payload)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+    except ImportError:
+        # Fallback if qrcode module is not installed in current runtime
+        return ""

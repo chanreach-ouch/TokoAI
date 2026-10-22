@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard, MessageSquare, BookOpen, BarChart3,
   ShoppingBag, Link2, Settings, Users, LogOut, Shield,
-  Sparkles, CheckCircle2
+  Sparkles, CheckCircle2, QrCode
 } from "lucide-react";
 
 export function Sidebar() {
@@ -16,9 +16,11 @@ export function Sidebar() {
   const navItems = [
     { name: "Command Cockpit",  href: "/dashboard",                  icon: LayoutDashboard, exact: true },
     { name: "Unified Inbox",    href: "/dashboard/inbox",             icon: MessageSquare,   badge: "3" },
+    { name: "AI Simulator",     href: "/dashboard/ai-setup",          icon: Sparkles },
     { name: "Customer CRM",     href: "/dashboard/customers",         icon: Users },
     { name: "Knowledge Base",   href: "/dashboard/knowledge-base",    icon: BookOpen },
     { name: "Orders & Dispatch",href: "/dashboard/orders",            icon: ShoppingBag },
+    { name: "Bakong KHQR",      href: "/dashboard/payments",          icon: QrCode },
     { name: "Integrations",     href: "/dashboard/integrations",      icon: Link2,           ownerOnly: true },
     { name: "Deep Analytics",   href: "/dashboard/analytics",         icon: BarChart3,       ownerOnly: true },
     { name: "Settings",         href: "/dashboard/settings",          icon: Settings,        ownerOnly: true },

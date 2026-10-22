@@ -2,10 +2,7 @@ import asyncio
 from app.core.db import engine
 from app.models.base import Base
 from sqlalchemy import text
-from app.models.seller import Seller
-from app.models.product import Product
-from app.models.chat import Conversation, Message
-from app.models.faq import FAQ
+from app.models import Seller, Shop, Product, User, Order, Customer, Conversation, Message, FAQ
 import uuid
 import bcrypt
 

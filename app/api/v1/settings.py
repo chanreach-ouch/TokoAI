@@ -42,3 +42,34 @@ async def update_settings(req: SettingsUpdate, seller_id: str = Depends(get_curr
     await db.commit()
     
     return {"status": "success", "message": "Settings updated successfully"}
+
+class SimulationRequest(BaseModel):
+    message: str
+    bot_tone: str | None = None
+
+from app.agent.rag import generate_agent_reply
+from app.models.shop import Shop
+
+@router.post("/simulate", summary="Simulate agent reply for testing")
+async def simulate_reply(
+    req: SimulationRequest,
+    seller_id: str = Depends(get_current_owner),
+    db: AsyncSession = Depends(get_db)
+):
+    # Find shop for this seller
+    shop_res = await db.execute(select(Shop).where(Shop.owner_id == uuid.UUID(seller_id)))
+    shop = shop_res.scalars().first()
+    shop_id = str(shop.id) if shop else "00000000-0000-0000-0000-000000000000"
+    
+    reply = await generate_agent_reply(
+        message_text=req.message,
+        session=db,
+        shop_id=shop_id,
+        sender_id=f"sim-{seller_id[:8]}"
+    )
+    
+    return {
+        "reply": reply,
+        "shop_id": shop_id,
+        "input": req.message
+    }

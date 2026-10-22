@@ -117,6 +117,7 @@ npm run build
 - **SQLAlchemy 2.0 Syntax**: Use modern `select(Model).where(...)` syntax with `db.execute()`. Do not use legacy SQLAlchemy 1.x `db.query(Model)` patterns.
 - **Tailwind Design System**: Maintain the dark-mode aesthetic defined in `@frontend/src/app/globals.css`. Use predefined theme classes (`bg-brand-ink`, `text-brand-pink`, `text-brand-cyan`, `border-border`) rather than hardcoded inline hex colors.
 - **Khmer Diacritic Typography**: Whenever rendering Khmer script, ensure `leading-relaxed` or `font-khmer` line-height is applied to avoid clipping tone marks and subscript consonants (`ជើងអក្សរ`).
+- **Frontend Design & Token Discipline**: For UI work, use the frontend-design skill for composition, typography hierarchy, and avoiding generic or template-looking layouts. DESIGN.md tokens and rules always take precedence. Do not introduce fonts, colors, spacing, or radii that are not defined there.
 
 ---
 

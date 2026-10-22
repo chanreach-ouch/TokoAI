@@ -5,8 +5,10 @@ import { CheckCircle2, ToggleLeft, ToggleRight, Sparkles, CreditCard, Shield, Us
 import { Button, Card, Input, Textarea, Badge } from "@/components/ui/design-system";
 import api from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [tone, setTone] = useState('Friendly');
   const [aiTrustMode, setAiTrustMode] = useState('BALANCED');
   const [dualCurrency, setDualCurrency] = useState(true);
@@ -74,7 +76,7 @@ export default function SettingsPage() {
       await api.post('/auth/invite', { 
         email: staffEmail, 
         password: staffPassword, 
-        shop_id: "00000000-0000-0000-0000-000000000000" 
+        shop_id: (user as any)?.shop_id || undefined 
       });
       toast.success(`Staff agent ${staffEmail} invited successfully!`);
       setStaffEmail("");

@@ -12,7 +12,11 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     items: Mapped[dict] = mapped_column(JSONB, nullable=False)
     total_amount_usd: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    status: Mapped[str] = mapped_column(String, nullable=False, default="PENDING") # PENDING, PAID, SHIPPED, CANCELLED
+    status: Mapped[str] = mapped_column(String, nullable=False, default="PENDING") # PENDING, PAID, CONFIRMED, SHIPPED, CANCELLED
+    payment_method: Mapped[str] = mapped_column(String, nullable=False, default="KHQR") # KHQR, COD
+    delivery_fee_usd: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0.0)
+    customer_phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(String, nullable=True)
     khqr_string: Mapped[str | None] = mapped_column(String, nullable=True)
     khqr_md5: Mapped[str | None] = mapped_column(String, nullable=True)
     

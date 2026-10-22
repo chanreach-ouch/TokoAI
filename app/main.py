@@ -11,6 +11,7 @@ from app.api.v1.faqs import router as faqs_router
 from app.api.v1.inbox import router as inbox_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.analytics import router as analytics_router
+from app.api.v1.customers import router as customers_router
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -66,6 +67,7 @@ app.include_router(settings_router, prefix="/api/v1/seller/settings", tags=["Sel
 app.include_router(faqs_router, prefix="/api/v1/seller/faqs", tags=["Seller FAQs"])
 app.include_router(inbox_router, prefix="/api/v1/seller/inbox", tags=["Seller Inbox"])
 app.include_router(analytics_router, prefix="/api/v1/seller/analytics", tags=["Seller Analytics"])
+app.include_router(customers_router, prefix="/api/v1")
 app.include_router(orders_router, prefix="/api/v1/orders", tags=["Order Management"])
 
 @app.get("/health")

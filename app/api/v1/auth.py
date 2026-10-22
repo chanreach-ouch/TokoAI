@@ -92,11 +92,22 @@ async def invite_staff(
     owner_id: str = Depends(get_current_owner), 
     db: AsyncSession = Depends(get_db)
 ):
-    # Verify owner actually owns this shop
+    # Verify owner actually owns this shop or auto-resolve owner's shop
     from app.models.shop import Shop
-    result = await db.execute(select(Shop).where(Shop.id == req.shop_id, Shop.owner_id == owner_id))
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="Not authorized to invite to this shop")
+    target_shop = None
+    try:
+        owner_uuid = uuid.UUID(owner_id)
+        if req.shop_id and str(req.shop_id) != "00000000-0000-0000-0000-000000000000":
+            result = await db.execute(select(Shop).where(Shop.id == req.shop_id, Shop.owner_id == owner_uuid))
+            target_shop = result.scalar_one_or_none()
+        else:
+            result = await db.execute(select(Shop).where(Shop.owner_id == owner_uuid))
+            target_shop = result.scalar_one_or_none()
+    except Exception:
+        pass
+
+    if not target_shop:
+        raise HTTPException(status_code=403, detail="Not authorized or no active shop found to invite staff to.")
 
     # Check if email exists
     result = await db.execute(select(Seller).where(Seller.email == req.email))
@@ -109,7 +120,7 @@ async def invite_staff(
         email=req.email, 
         hashed_password=hashed_password,
         role=SellerRole.AGENT.value,
-        shop_id=req.shop_id
+        shop_id=target_shop.id
     )
     db.add(new_staff)
     await db.commit()

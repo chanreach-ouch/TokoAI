@@ -9,7 +9,7 @@ client = TestClient(app)
 
 def test_webhook_invalid_signature():
     response = client.post(
-        "/api/v1/webhooks/tiktok",
+        "/api/v1/webhooks/tiktok/",
         headers={"x-tiktok-signature": "invalid"},
         content=b'{"data": "test"}'
     )
@@ -26,7 +26,7 @@ def test_webhook_valid_signature(mock_get_arq_pool):
     mock_get_arq_pool.return_value = mock_pool
     
     response = client.post(
-        "/api/v1/webhooks/tiktok",
+        "/api/v1/webhooks/tiktok/",
         headers={"x-tiktok-signature": signature},
         content=payload
     )

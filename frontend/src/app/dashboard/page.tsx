@@ -87,39 +87,99 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 24-Hour Operations Pulse */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-          <Sparkles size={12} className="text-[#EA580C]" /> 24-Hour Operations Pulse
+      {/* Midnight Telemetry & Operations Pulse */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+            <Sparkles size={12} className="text-[#EA580C]" /> Midnight Operations Telemetry
+          </div>
+          <span className="text-[10px] font-mono text-slate-400">
+            Phnom Penh (GMT+7)
+          </span>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <PulseCard
-            label="AI Autonomy Rate"
-            value={<>94% <span className="text-sm font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/70 align-middle">+2.4%</span></>}
-            sub="Autonomous chats without human takeover"
-          />
-          <PulseCard
-            label="Abandoned Carts Saved"
-            value="12"
-            accent="text-[#EA580C]"
-            sub={<><span className="inline-flex items-center gap-1 bg-orange-50 text-[#EA580C] border border-orange-200/70 px-2 py-0.5 rounded-full text-[9px] font-bold mr-1">Recovered</span>via spoken Khmer DMs</>}
-          />
-          <PulseCard
-            label="Today's Revenue"
-            value={<>$845 <span className="text-sm font-mono font-normal text-slate-400 align-middle">/ ៛3.46M</span></>}
-            accent="text-emerald-600"
-            sub="Bakong KHQR Webhook verified in real time"
-          />
-          <div className="bg-white rounded-2xl border border-[#E4E7EF] p-5 flex flex-col gap-3 shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] hover:shadow-[0_4px_16px_-2px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all duration-200">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Trust Engine Status</span>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={22} className="text-emerald-500" />
-              <span className="text-lg font-bold text-[#0F172A]">Autonomous</span>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+          
+          {/* Dominant Hero Card: Overnight Revenue Attribution */}
+          <div className="md:col-span-6 bg-gradient-to-br from-white to-[#FAF9F5] rounded-3xl border border-[#E4E7EF] p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#00938C] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                  Overnight Shift Settled
+                </span>
+                <span className="text-[10px] font-bold bg-teal-50 text-[#00938C] px-2.5 py-0.5 rounded-full border border-teal-200">
+                  Bakong KHQR Webhook
+                </span>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-4xl font-black text-[#0F172A] tracking-tight tabular-nums">$845.00</span>
+                <span className="text-base font-bold text-slate-400 font-mono">/ ៛3,460,000 KHR</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
+                Autonomous orders closed between 10 PM and 2 AM while staff slept.
+              </p>
             </div>
-            <Link href="/dashboard/settings" className="text-[11px] text-[#EA580C] hover:underline font-bold flex items-center gap-1">
-              Configure Safeguards <ArrowRight size={11} />
+
+            <div className="pt-3 border-t border-[#E4E7EF] flex items-center justify-between text-xs text-slate-600">
+              <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                ↑ 3.2x higher conversion than manual staff reply
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                100% Zero-Drop
+              </span>
+            </div>
+          </div>
+
+          {/* Secondary Metric: AI Autonomy & Spoken Khmer Recovery */}
+          <div className="md:col-span-3 bg-white rounded-3xl border border-[#E4E7EF] p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-3">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+                Conversational Autonomy
+              </span>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-3xl font-black text-[#0F172A] tabular-nums">94%</span>
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md">
+                  +2.4%
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                <span className="font-bold text-[#EA580C]">12 abandoned carts</span> saved via spoken Khmer DMs (`ភាសានិយាយ`).
+              </p>
+            </div>
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+              <span>Human Takeovers: 6%</span>
+              <span className="text-emerald-600 font-bold">Optimal</span>
+            </div>
+          </div>
+
+          {/* Tertiary Metric: AI Trust Safeguard Engine */}
+          <div className="md:col-span-3 bg-white rounded-3xl border border-[#E4E7EF] p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-3">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+                Safeguard Engine
+              </span>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-[#00938C]">
+                  <CheckCircle2 size={18} />
+                </div>
+                <div>
+                  <span className="text-base font-extrabold text-[#0F172A] block leading-tight">Autonomous</span>
+                  <span className="text-[10px] text-slate-400">Max KHQR Limit: $100</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                Deterministic stock verification active. Zero hallucinated discounts.
+              </p>
+            </div>
+            <Link 
+              href="/dashboard/settings" 
+              className="text-[11px] text-[#EA580C] hover:underline font-extrabold flex items-center gap-1 pt-2 border-t border-slate-100"
+            >
+              Tune Safeguards <ArrowRight size={11} />
             </Link>
           </div>
+
         </div>
       </div>
 

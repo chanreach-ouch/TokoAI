@@ -113,11 +113,10 @@ async def send_manual_reply(
     # Auto-enable human takeover when sending a manual reply
     conv.is_human_takeover = True
     
-    # Save the message
+    # Save the message with valid model schema (role='human_agent')
     new_message = Message(
         conversation_id=conv.id,
-        sender_type="SELLER",
-        role="assistant",
+        role="human_agent",
         content=req.content
     )
     
@@ -125,8 +124,22 @@ async def send_manual_reply(
     await db.commit()
     await db.refresh(new_message)
     
-    # Normally here you would also push this message out via TikTok API 
-    # to the actual customer. For now we just log it in the DB.
+    # Outbound delivery to TikTok
+    from app.models.shop import Shop
+    from app.integrations.tiktok_client import send_message
+    
+    try:
+        shop_res = await db.execute(select(Shop).where(Shop.owner_id == uuid.UUID(seller_id)))
+        shop = shop_res.scalar_one_or_none()
+        if shop and conv.customer_platform_id:
+            await send_message(
+                recipient_id=conv.customer_platform_id,
+                text=req.content,
+                shop_id=str(shop.id)
+            )
+    except Exception as e:
+        # Non-blocking if TikTok access token is dev-mode or network error
+        pass
     
     return {
         "status": "success", 

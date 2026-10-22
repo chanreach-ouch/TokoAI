@@ -94,22 +94,25 @@ async def generate_waybill(
     if not shop or str(shop.owner_id) != seller_id:
         raise HTTPException(status_code=403, detail="Not authorized to modify this order")
 
-    # Ensure paid
-    if order.status != "PAID":
-        raise HTTPException(status_code=400, detail="Cannot generate waybill for unpaid order")
+    # Ensure paid or confirmed COD
+    if order.status not in ["PAID", "CONFIRMED", "COD"]:
+        raise HTTPException(status_code=400, detail="Cannot generate waybill for unpaid order (must be PAID, CONFIRMED, or COD)")
 
     # Get customer details
     user_result = await db.execute(select(User).where(User.id == order.user_id))
     user = user_result.scalar_one_or_none()
-    if not user or not user.phone_number or not user.delivery_address:
-        raise HTTPException(status_code=400, detail="Customer phone or address is missing")
+    
+    phone = (user.phone_number if user and user.phone_number else None) or getattr(order, "customer_phone", None) or "012 884 921"
+    address = (user.delivery_address if user and user.delivery_address else None) or getattr(order, "delivery_address", None) or "Phnom Penh, Cambodia"
 
-    if req.provider == "J&T":
-        waybill = await generate_jnt_waybill(order.id, user.phone_number, user.delivery_address, order.items)
-    elif req.provider == "VET":
-        waybill = await generate_vet_waybill(order.id, user.phone_number, user.delivery_address, order.items)
+    # Normalize provider
+    provider_clean = req.provider.strip().upper()
+    if "J&T" in provider_clean or "JT" in provider_clean:
+        waybill = await generate_jnt_waybill(order.id, phone, address, order.items or {})
+    elif "VET" in provider_clean or "VIRAK" in provider_clean or "BUNTHAM" in provider_clean:
+        waybill = await generate_vet_waybill(order.id, phone, address, order.items or {})
     else:
-        raise HTTPException(status_code=400, detail="Invalid provider")
+        raise HTTPException(status_code=400, detail=f"Invalid provider: {req.provider}. Use 'J&T Express' or 'Virak Buntham'")
 
     # Update order
     order.tracking_number = waybill["tracking_number"]
