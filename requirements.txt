@@ -8,6 +8,7 @@ pgvector
 pydantic-settings
 httpx
 google-generativeai
+google-genai
 qrcode
 pillow
 crccheck
