@@ -44,7 +44,7 @@ export default function LandingPage() {
   };
 
   const copyDemoText = (text: string) => {
-    navigator.clipboard.writeText(text);
+    if (typeof navigator !== "undefined" && navigator.clipboard) { navigator.clipboard.writeText(text); }
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

@@ -153,3 +153,18 @@ All roadmap items identified during the architectural audit have been implemente
 5. **Bakong Settlements Console**:
    - Modernized `@frontend/src/app/dashboard/payments/page.tsx` with live order ledger, NBC verification badges, and linked directly in `@frontend/src/components/Sidebar.tsx`.
 
+
+### Phase 4: Atomic Inventory Stock Auto-Deduction & Product Variant Matrix (VERIFIED ✅)
+1. **Product Variant Matrix (Sizes & Colors)**:
+   - Added `variants = Column(JSONB, nullable=True, default=list)` to `@app/models/product.py` supporting fashion options (e.g. `[{"size": "S", "color": "Black", "stock": 10}]`).
+   - Upgraded `@app/api/v1/products.py` to serialize/deserialize variants in both JSON body and multipart form submissions, automatically synchronizing total `stock = sum(v["stock"])`.
+2. **Atomic Inventory Stock Auto-Deduction**:
+   - In `@app/agent/rag.py`, added `size` and `color` parameters to `create_order` tool declaration.
+   - Guarded against overselling: if specific variant or total stock is 0, the AI refuses the order in spoken Khmer and suggests available in-stock alternatives.
+   - When an order is created, decrements `Product.stock` and the specific variant `stock` atomically.
+3. **Cancellation Inventory Restoration**:
+   - Upgraded `@app/api/v1/orders.py` status update handler: when an order transitions to `CANCELLED`, automatically returns reserved quantity back to total `Product.stock` and the matching variant in `Product.variants`.
+4. **Knowledge Base Dashboard Integration**:
+   - Upgraded `@frontend/src/app/dashboard/knowledge-base/page.tsx` with variant pill badges on product cards (`S: 10`, `M: 25`, `L: 0 [line-through]`) and a variant options input field in the manual product creation modal.
+5. **Automated Unit Test Verification**:
+   - Created `@tests/test_variants_and_stock.py` covering model instantiation, variant out-of-stock refusal, atomic decrement, and cancellation restoration; 100% passing.

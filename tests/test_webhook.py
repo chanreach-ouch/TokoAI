@@ -5,7 +5,8 @@ from app.config import settings
 from fastapi.testclient import TestClient
 from app.main import app
 
-client = TestClient(app)
+app.state.limiter.enabled = False
+client = TestClient(app, base_url="http://127.0.0.1")
 
 def test_webhook_invalid_signature():
     response = client.post(

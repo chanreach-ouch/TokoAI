@@ -4,15 +4,13 @@
 
 @layer base {
   :root {
-    /* === TokoAI Warm Executive Canvas (Single Source of Truth) === */
-    /* Surface layers */
-    --canvas:       40 50% 97%;    /* #FAF9F5 — warm parchment page bg */
-    --surface:      0 0% 100%;     /* #FFFFFF — card / panel white */
-    --surface-sub:  40 33% 95%;    /* #F5F2ED — subtle inset / row stripe */
+    /* === TokoAI Royal Executive Palette (Rubick Architecture) === */
+    --canvas:       210 20% 98%;   /* #F1F5F9 — slate canvas */
+    --surface:      0 0% 100%;     /* #FFFFFF — crisp white card */
+    --surface-sub:  210 20% 96%;   /* #E2E8F0 — inset chip */
 
-    /* Semantic Tailwind CSS vars (consumed by bg-background, text-foreground, etc.) */
-    --background:   40 50% 97%;    /* Warm ivory canvas */
-    --foreground:   222 47% 7%;    /* #0A0E1A charcoal slate text */
+    --background:   224 71% 38%;   /* #1B38A6 Royal Cobalt Shell */
+    --foreground:   222 47% 7%;    /* #0F172A slate text */
 
     --card:         0 0% 100%;
     --card-foreground: 222 47% 7%;
@@ -20,33 +18,26 @@
     --popover:      0 0% 100%;
     --popover-foreground: 222 47% 7%;
 
-    --primary:      24 90% 51%;    /* #EA580C burnt orange */
+    --primary:      224 71% 38%;   /* #1B38A6 Royal Cobalt */
     --primary-foreground: 0 0% 100%;
 
-    --secondary:    210 17% 95%;   /* #EEF1F5 — pale slate chip */
+    --secondary:    210 20% 96%;
     --secondary-foreground: 222 47% 7%;
 
-    --muted:        40 33% 95%;
-    --muted-foreground: 217 19% 46%; /* #6B7E9A */
+    --muted:        210 20% 96%;
+    --muted-foreground: 217 19% 46%;
 
-    --accent:       173 90% 30%;   /* #00938C Bakong teal */
+    --accent:       24 90% 51%;    /* #EA580C Burnt Orange for TikTok Commerce */
     --accent-foreground: 0 0% 100%;
 
-    --destructive:  0 84% 60%;     /* #EF4444 */
+    --destructive:  0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border:       220 13% 91%;   /* #E4E7EF slate border */
+    --border:       220 13% 91%;
     --input:        220 13% 91%;
-    --ring:         24 90% 51%;    /* Orange focus ring */
+    --ring:         224 71% 38%;
 
-    --radius: 14px;
-
-    /* Chart tokens */
-    --chart-1: 24 90% 51%;   /* Orange */
-    --chart-2: 173 90% 30%;  /* Bakong teal */
-    --chart-3: 152 60% 40%;  /* Emerald */
-    --chart-4: 217 19% 46%;  /* Slate */
-    --chart-5: 45 93% 47%;   /* Amber */
+    --radius: 16px;
   }
 }
 
@@ -56,84 +47,71 @@
   }
 
   html {
-    /* Force warm ivory on all surfaces, preventing dark-mode bleed */
-    background-color: hsl(40, 50%, 97%);
-    color: hsl(222, 47%, 7%);
+    background-color: #1B38A6;
+    color: #0F172A;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    @apply antialiased;
+    font-family: 'Inter', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     line-height: 1.6;
-    background-color: hsl(40, 50%, 97%); /* Warm ivory — explicit override */
-    color: hsl(222, 47%, 7%);
-    selection-color: #EA580C;
+    background-color: #1B38A6;
+    color: #0F172A;
   }
 
   ::selection {
-    background-color: rgba(234, 88, 12, 0.15);
-    color: #EA580C;
+    background-color: rgba(27, 56, 166, 0.18);
+    color: #1B38A6;
   }
 }
 
-/* ===== Custom Design System Utilities ===== */
+/* ===== Custom Utilities ===== */
 @layer utilities {
-  /* Khmer script — relaxed line-height to prevent diacritic clip */
   .font-khmer {
     font-family: 'Kantumruy Pro', 'Inter', sans-serif;
     line-height: 1.85;
     letter-spacing: 0.01em;
   }
 
-  /* Text gradient (landing page hero) */
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #EA580C 0%, #F97316 40%, #FBBF24 100%);
+    background-image: linear-gradient(135deg, #1B38A6 0%, #2563EB 50%, #60A5FA 100%);
   }
 
-  /* Subtle ambient glow for orange accents */
-  .glow-orange {
-    box-shadow: 0 0 24px -4px rgba(234, 88, 12, 0.30);
+  .shadow-2xs {
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
   }
 
-  /* Bakong teal ambient glow */
-  .glow-teal {
-    box-shadow: 0 0 24px -4px rgba(0, 147, 140, 0.25);
+  .shadow-xs {
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
   }
 
-  /* Inset stripe for alternating table/list rows */
-  .row-stripe:nth-child(even) {
-    background-color: hsl(40, 33%, 96%);
+  .shadow-sm {
+    box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.06), 0 1px 4px -1px rgba(15, 23, 42, 0.03);
+  }
+
+  .shadow-md {
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
 }
 
-/* ===== Animations ===== */
-@layer utilities {
-  @keyframes ping-slow {
-    75%, 100% { transform: scale(2.2); opacity: 0; }
-  }
-  .animate-ping-slow {
-    animation: ping-slow 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
-  }
-
-  @keyframes shimmer {
-    0% { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
-  }
-  .animate-shimmer {
-    background: linear-gradient(90deg, hsl(40,33%,96%) 25%, hsl(40,50%,99%) 50%, hsl(40,33%,96%) 75%);
-    background-size: 800px 100%;
-    animation: shimmer 1.6s ease-in-out infinite;
-  }
-}
-
-/* ===== Scrollbars — warm chrome ===== */
+/* ===== Custom Scrollbars ===== */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.12);
+  background: rgba(15, 23, 42, 0.15);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(234, 88, 12, 0.35);
+  background: rgba(27, 56, 166, 0.4);
 }

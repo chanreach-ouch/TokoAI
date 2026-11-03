@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { Shield, RefreshCw } from "lucide-react";
 import { Button, Card, Badge } from "@/components/ui/design-system";
 import api from "@/lib/api";
+import { useToast } from "@/context/ToastContext";
 
 export default function AdminPage() {
   const [tenants, setTenants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const toast = useToast();
 
   useEffect(() => {
     fetchSellers();
@@ -19,6 +21,7 @@ export default function AdminPage() {
       setTenants(res.data);
     } catch (error) {
       console.error(error);
+      toast.error("Failed to load platform tenants.");
     } finally {
       setIsLoading(false);
     }
@@ -26,11 +29,12 @@ export default function AdminPage() {
 
   const handleToggleStatus = async (sellerId: string) => {
     try {
-      await api.post(`/admin/sellers/${sellerId}/toggle-status`);
+      const res = await api.post(`/admin/sellers/${sellerId}/toggle-suspend`);
+      toast.success(res.data?.message || "Tenant status updated successfully.");
       fetchSellers();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Failed to toggle seller status.");
+      toast.error(error.response?.data?.detail || "Failed to toggle seller status.");
     }
   };
 
@@ -39,7 +43,7 @@ export default function AdminPage() {
       <div className="pb-4 border-b border-slate-200/80">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A] flex items-center gap-2">
-            <Shield className="text-[#EA580C]" size={24} /> Platform Superadmin Cockpit
+            <Shield className="text-[#1B38A6]" size={24} /> Platform Superadmin Cockpit
           </h1>
           <Badge variant="brand" className="text-[10px]">Multi-Tenant Oversight</Badge>
         </div>
@@ -50,14 +54,14 @@ export default function AdminPage() {
       
       {isLoading ? (
         <div className="p-12 text-center text-xs text-slate-400">
-          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#EA580C]" />
+          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#1B38A6]" />
           Loading platform tenants...
         </div>
       ) : (
         <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-sm rounded-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs whitespace-nowrap">
-              <thead className="bg-[#FAF9F5] border-b border-slate-200/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+              <thead className="bg-slate-50 border-b border-slate-200/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
                 <tr>
                   <th className="px-6 py-4">Tenant Shop Owner</th>
                   <th className="px-6 py-4">Active Bot Tone</th>

@@ -46,6 +46,7 @@ async def update_settings(req: SettingsUpdate, seller_id: str = Depends(get_curr
 class SimulationRequest(BaseModel):
     message: str
     bot_tone: str | None = None
+    image_url: str | None = None
 
 from app.agent.rag import generate_agent_reply
 from app.models.shop import Shop
@@ -65,7 +66,8 @@ async def simulate_reply(
         message_text=req.message,
         session=db,
         shop_id=shop_id,
-        sender_id=f"sim-{seller_id[:8]}"
+        sender_id=f"sim-{seller_id[:8]}",
+        image_url=req.image_url
     )
     
     return {

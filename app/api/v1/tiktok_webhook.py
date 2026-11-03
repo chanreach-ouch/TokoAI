@@ -1,9 +1,4 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Header
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-from app.core.db import get_db
-from app.services.gemini import generate_chat_reply, embed_query
-import uuid
+from fastapi import APIRouter, Request, HTTPException, Header
 import hmac
 import hashlib
 import os
@@ -17,7 +12,6 @@ router = APIRouter(prefix="/webhooks/tiktok", tags=["Webhooks"])
 @limiter.limit("30/minute")
 async def tiktok_webhook(
     request: Request, 
-    db: AsyncSession = Depends(get_db),
     x_tiktok_signature: str = Header(None)
 ):
     """
