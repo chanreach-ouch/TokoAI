@@ -1,10 +1,9 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, Float, ForeignKey, Text, DateTime
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from pgvector.sqlalchemy import Vector
 from app.models.base import Base
 import uuid
 from datetime import datetime
-from sqlalchemy import DateTime
 
 class Product(Base):
     __tablename__ = "products"
@@ -20,6 +19,10 @@ class Product(Base):
     price = Column(Float, nullable=False)
     stock = Column(Integer, default=0)
     image_url = Column(String)
+    
+    # Product Variants (Sizes, Colors, Sub-SKUs, and Variant-level stock)
+    # Format: [{"size": "M", "color": "Black", "sku": "KZ-BLK-M", "stock": 10}, ...]
+    variants = Column(JSONB, nullable=True, default=list)
     
     # Text-embedding-004 produces 768-dimensional vectors
     embedding = Column(Vector(768))

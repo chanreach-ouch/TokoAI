@@ -24,7 +24,7 @@ async def test_retrieve_relevant_products():
     
     mock_session.execute.side_effect = [mock_result_shop, mock_result_products]
     
-    with patch("app.agent.rag.client.models.embed_content") as mock_embed:
+    with patch("google.genai.models.Models.embed_content") as mock_embed:
         class MockEmbedding:
             values = [0.1] * 768
         class MockResponse:

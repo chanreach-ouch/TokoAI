@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button, Card, Badge, Input } from "@/components/ui/design-system";
-import { Search, User, Filter, MessageCircle, Download, Sparkles, Phone, ShoppingBag, ShieldCheck } from "lucide-react";
+import { Search, User, Filter, MessageCircle, Download, Sparkles, Phone, ShoppingBag, ShieldCheck, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 
@@ -20,23 +20,27 @@ export default function CustomersPage() {
     { id: "CUST-005", name: "Channary Tep", phone: "077 551 883", carrier: "Cellcard", landmark: "Svay Por, Battambang", platform: "TikTok Shop", orders: 6, ltv: 210.00, lastActive: "5 hours ago", isVIP: true },
   ];
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      setIsLoading(true);
-      try {
-        const res = await api.get("/seller/customers");
-        if (res.data && res.data.length > 0) {
-          setCustomers(res.data);
-        } else {
-          setCustomers(mockCustomers);
-        }
-      } catch (err) {
-        console.warn("Using fallback customer demo records:", err);
+  const fetchCustomers = async (query?: string) => {
+    setIsLoading(true);
+    try {
+      const url = query ? `/seller/customers?q=${encodeURIComponent(query)}` : "/seller/customers";
+      const res = await api.get(url);
+      if (res.data && res.data.length > 0) {
+        setCustomers(res.data);
+      } else if (!query) {
         setCustomers(mockCustomers);
-      } finally {
-        setIsLoading(false);
+      } else {
+        setCustomers([]);
       }
-    };
+    } catch (err) {
+      console.warn("Using fallback customer demo records:", err);
+      if (!query) setCustomers(mockCustomers);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCustomers();
   }, []);
 
@@ -45,12 +49,14 @@ export default function CustomersPage() {
   };
 
   const filtered = customers.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.phone.includes(searchQuery) ||
-    c.id.toLowerCase().includes(searchQuery.toLowerCase())
+    (c.name && c.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (c.phone && c.phone.includes(searchQuery)) ||
+    (c.id && c.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (c.carrier && c.carrier.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (c.landmark && c.landmark.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const totalLTV = customers.reduce((acc, c) => acc + c.ltv, 0);
+  const totalLTV = customers.reduce((acc, c) => acc + (Number(c.ltv) || 0), 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl pb-12">
@@ -60,7 +66,7 @@ export default function CustomersPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A]">
-              Customer CRM & Phone Directory
+              Customer CRM &amp; Phone Directory
             </h1>
             <Badge variant="brand" className="text-[10px]">012 / 015 / 098</Badge>
           </div>
@@ -69,35 +75,41 @@ export default function CustomersPage() {
           </p>
         </div>
         <div className="flex gap-2.5">
-          <Button variant="secondary" className="h-9 text-xs gap-1.5 shadow-sm">
-            <Filter size={13} /> Filter Segment
-          </Button>
-          <Button variant="brand" className="h-9 text-xs gap-1.5 shadow-sm" onClick={handleExport}>
+          <button 
+            className="h-9 px-3.5 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-[#0F172A] text-xs font-semibold gap-1.5 shadow-xs transition-all flex items-center" 
+            onClick={() => fetchCustomers(searchQuery)}
+          >
+            <RefreshCw size={13} className={isLoading ? "animate-spin text-[#1B38A6]" : ""} /> Sync CRM
+          </button>
+          <button 
+            className="h-9 px-4 rounded-full bg-[#1B38A6] hover:bg-[#142C85] text-white text-xs font-bold gap-1.5 shadow-xs transition-all flex items-center" 
+            onClick={handleExport}
+          >
             <Download size={13} /> Export CSV
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* KPI Highlight Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Buyers</p>
           <p className="text-xl font-extrabold text-[#0F172A] mt-1 tabular-nums">{customers.length} Profiles</p>
           <span className="text-[10px] text-emerald-600 font-semibold mt-0.5 inline-block">100% Mobile Phone Validated</span>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total CRM LTV</p>
           <p className="text-xl font-extrabold text-[#0F172A] mt-1 tabular-nums">${totalLTV.toFixed(2)}</p>
-          <span className="text-[10px] text-slate-500 font-medium mt-0.5 inline-block">៛{(totalLTV * 4000).toLocaleString()} KHR</span>
+          <span className="text-[10px] text-slate-500 font-medium mt-0.5 inline-block">៛{(totalLTV * 4100).toLocaleString()} KHR</span>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">VIP High-Spenders</p>
-          <p className="text-xl font-extrabold text-[#EA580C] mt-1 tabular-nums">
+          <p className="text-xl font-extrabold text-[#1B38A6] mt-1 tabular-nums">
             {customers.filter(c => c.isVIP).length} VIP Buyers
           </p>
           <span className="text-[10px] text-slate-500 font-medium mt-0.5 inline-block">&gt; 5 Completed Orders</span>
         </Card>
-        <Card className="p-4 bg-white border border-slate-200/80 shadow-sm">
+        <Card className="p-4 bg-white border border-slate-200/80 shadow-xs">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Primary Channel</p>
           <p className="text-xl font-extrabold text-[#0F172A] mt-1">TikTok Shop</p>
           <span className="text-[10px] text-sky-600 font-semibold mt-0.5 inline-block">Business DM Ingestion</span>
@@ -108,18 +120,18 @@ export default function CustomersPage() {
       <div className="relative max-w-md">
         <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-slate-400" />
         <Input 
-          placeholder="Search by buyer name, phone (012...), or customer ID..." 
+          placeholder="Search by buyer name, phone (012...), carrier, or landmark..." 
           value={searchQuery}
           onChange={(e: any) => setSearchQuery(e.target.value)}
-          className="pl-9 h-10 text-xs bg-white border-slate-200/80 focus-visible:border-[#EA580C]" 
+          className="pl-9 h-10 text-xs bg-white border-slate-200/80 focus-visible:border-[#1B38A6]" 
         />
       </div>
 
       {/* Customers Table */}
-      <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-sm rounded-2xl">
+      <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-xs rounded-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead className="bg-[#FAF9F5] border-b border-slate-200/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+            <thead className="bg-slate-50 border-b border-slate-200/80 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
               <tr>
                 <th className="px-5 py-3.5">Customer</th>
                 <th className="px-5 py-3.5">Phone (Cambodia)</th>
@@ -134,6 +146,7 @@ export default function CustomersPage() {
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-10 text-center text-slate-400">
+                    <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2 text-[#1B38A6]" />
                     Loading Cambodian customer directory...
                   </td>
                 </tr>
@@ -148,8 +161,8 @@ export default function CustomersPage() {
                   <tr key={customer.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200/70 flex items-center justify-center font-bold text-xs text-[#EA580C] shrink-0">
-                          {customer.name.charAt(0)}
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200/70 flex items-center justify-center font-bold text-xs text-[#1B38A6] shrink-0">
+                          {customer.name?.charAt(0) || "C"}
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-[#0F172A] flex items-center gap-2">
@@ -162,7 +175,7 @@ export default function CustomersPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5">
                         <span className="font-mono font-bold text-xs text-[#0F172A]">{customer.phone}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-[#FAF9F5] border border-[#E4E7EF] text-slate-700">
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 border border-slate-200 text-slate-700">
                           {customer.carrier}
                         </span>
                       </div>
@@ -180,8 +193,8 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-col">
-                        <span className="text-emerald-700 font-extrabold tabular-nums">${customer.ltv.toFixed(2)}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">៛{(customer.ltv * 4000).toLocaleString()}</span>
+                        <span className="text-emerald-700 font-extrabold tabular-nums">${Number(customer.ltv || 0).toFixed(2)}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">៛{(Number(customer.ltv || 0) * 4100).toLocaleString()}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-slate-500">{customer.lastActive}</td>
@@ -189,7 +202,7 @@ export default function CustomersPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <a 
                           href="/dashboard/inbox" 
-                          className="h-7 px-2.5 rounded-lg bg-orange-50 hover:bg-[#EA580C] text-[#EA580C] hover:text-white border border-orange-200 text-[11px] font-bold transition-all flex items-center gap-1 shadow-xs"
+                          className="h-7 px-2.5 rounded-lg bg-blue-50 hover:bg-[#1B38A6] text-[#1B38A6] hover:text-white border border-blue-200 text-[11px] font-bold transition-all flex items-center gap-1 shadow-xs"
                         >
                           <MessageCircle size={11} /> Co-Pilot
                         </a>

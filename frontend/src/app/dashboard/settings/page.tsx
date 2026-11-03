@@ -67,10 +67,16 @@ export default function SettingsPage() {
   };
 
   const handleInviteStaff = async () => {
-    if (!staffEmail || staffPassword.length < 8) {
-      toast.warning("Valid email and 8+ char temporary password required.");
+    if (!staffEmail) {
+      toast.warning("Please provide a valid staff email address.");
       return;
     }
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    if (!passwordRegex.test(staffPassword)) {
+      toast.warning("Password must be 8+ chars and include 1 letter, 1 number, and 1 special character (@$!%*#?&).");
+      return;
+    }
+
     setIsInviting(true);
     try {
       await api.post('/auth/invite', { 
@@ -90,7 +96,7 @@ export default function SettingsPage() {
 
   if (isLoading) return (
     <div className="p-12 text-center text-xs text-slate-400">
-      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#EA580C]" />
+      <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#1B38A6]" />
       Loading shop configurations...
     </div>
   );
@@ -114,7 +120,7 @@ export default function SettingsPage() {
       {/* Subscription & Billing */}
       <div className="space-y-3">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-          <CreditCard size={14} className="text-[#EA580C]" /> Subscription & Quota
+          <CreditCard size={14} className="text-[#1B38A6]" /> Subscription & Quota
         </h2>
         <Card className="p-6 border border-slate-200/80 bg-white shadow-sm rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
@@ -128,7 +134,7 @@ export default function SettingsPage() {
             {/* Progress bar */}
             <div className="w-48 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1.5">
               <div 
-                className="h-full bg-[#EA580C] rounded-full transition-all duration-500" 
+                className="h-full bg-[#1B38A6] rounded-full transition-all duration-500" 
                 style={{ width: `${Math.min(100, (usage / limit) * 100)}%` }}
               />
             </div>
@@ -147,13 +153,13 @@ export default function SettingsPage() {
       {/* AI Bot Tone */}
       <div className="space-y-3 pt-6 border-t border-slate-200/80">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-          <Sparkles size={14} className="text-[#EA580C]" /> Spoken Khmer Tone (ភាសានិយាយ)
+          <Sparkles size={14} className="text-[#1B38A6]" /> Spoken Khmer Tone (ភាសានិយាយ)
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { id: 'Friendly', label: 'Friendly (រួសរាយ)', desc: 'Warm, polite, uses បាទ/ចាស៎ & gentle particles' },
-            { id: 'Professional', label: 'Direct (រហ័ស)', desc: 'Short, efficient, fast specs and price quotes' },
-            { id: 'Gen-Z', label: 'Gen-Z (យុវវ័យ)', desc: 'Authentic TikTok slang, emojis & playful vibe' }
+            { id: 'Friendly', label: 'Friendly (រួសរាយ)', desc: 'Warm, sisterly/brotherly, uses បាទ/ចាស៎ & gentle emojis' },
+            { id: 'Professional', label: 'Professional (គួរសម)', desc: 'Direct, crisp, high-trust corporate retail standard' },
+            { id: 'Aggressive Sales', label: 'Fast Closer (ជំរុញ)', desc: 'High urgency, highlights scarcity & fast dispatch' }
           ].map(t => {
             const isSelected = tone.toLowerCase() === t.id.toLowerCase();
             return (
@@ -161,14 +167,14 @@ export default function SettingsPage() {
                 key={t.id} 
                 className={`p-4 cursor-pointer transition-all rounded-2xl ${
                   isSelected 
-                    ? 'border-2 border-[#EA580C] bg-orange-50/50 shadow-sm' 
+                    ? 'border-2 border-[#1B38A6] bg-blue-50/50 shadow-sm' 
                     : 'border border-slate-200/80 bg-white hover:border-slate-300'
                 }`}
                 onClick={() => setTone(t.id)}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className={`text-xs font-bold ${isSelected ? 'text-[#EA580C]' : 'text-slate-800'}`}>{t.label}</span>
-                  {isSelected && <CheckCircle2 size={16} className="text-[#EA580C]" />}
+                  <span className={`text-xs font-bold ${isSelected ? 'text-[#1B38A6]' : 'text-slate-800'}`}>{t.label}</span>
+                  {isSelected && <CheckCircle2 size={16} className="text-[#1B38A6]" />}
                 </div>
                 <p className="text-[11px] text-slate-500 leading-normal">{t.desc}</p>
               </Card>
@@ -221,14 +227,14 @@ export default function SettingsPage() {
           <div>
             <h3 className="text-xs font-bold text-[#0F172A]">Dual Currency Display ($USD / ៛KHR)</h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              AI automatically quotes prices in both US Dollars and Khmer Riel using 4,000 KHR exchange rate.
+              AI automatically quotes prices in both US Dollars and Khmer Riel using 4,100 KHR exchange rate.
             </p>
           </div>
           <button 
             onClick={() => setDualCurrency(!dualCurrency)} 
             className="p-1 focus:outline-none transition-colors"
           >
-            {dualCurrency ? <ToggleRight size={32} className="text-[#EA580C]" /> : <ToggleLeft size={32} className="text-slate-300" />}
+            {dualCurrency ? <ToggleRight size={32} className="text-[#1B38A6]" /> : <ToggleLeft size={32} className="text-slate-300" />}
           </button>
         </div>
       </div>
@@ -236,7 +242,7 @@ export default function SettingsPage() {
       {/* Staff Management */}
       <div className="space-y-3 pt-6 border-t border-slate-200/80">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-          <Users size={14} className="text-[#EA580C]" /> Staff Agent Access
+          <Users size={14} className="text-[#1B38A6]" /> Staff Agent Access
         </h2>
         <p className="text-xs text-slate-500">
           Invite team members to handle manual customer chat takeovers. Staff cannot access billing or integrations.
@@ -252,7 +258,7 @@ export default function SettingsPage() {
             />
             <Input 
               type="password"
-              placeholder="Temporary Password (8+ chars)" 
+              placeholder="Temporary Password (e.g. Toko@2026)" 
               value={staffPassword}
               onChange={(e: any) => setStaffPassword(e.target.value)}
               className="flex-1 text-xs"

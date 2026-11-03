@@ -7,7 +7,9 @@ from app.core.auth import get_current_seller
 from app.models.seller import Seller
 from app.models.product import Product
 from app.services.gemini import extract_vision_data, embed_text
+from pydantic import BaseModel
 import uuid
+import json
 import os
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -24,7 +26,7 @@ async def extract_vision(
     contents = await file.read()
     mime_type = file.content_type
     
-    # Save the file temporarily (or permanently in static/uploads)
+    # Save the file temporarily in static/uploads
     upload_dir = "app/static/uploads"
     os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, file.filename)
@@ -39,6 +41,7 @@ async def extract_vision(
     
     return extracted_data
 
+@router.post("")
 @router.post("/")
 async def create_product(
     request: Request,
@@ -47,7 +50,7 @@ async def create_product(
 ):
     """
     Saves the product to the DB and generates a vector embedding for RAG.
-    Supports both JSON payloads and Form submissions.
+    Supports both JSON payloads and Form submissions with variant support.
     """
     content_type = request.headers.get("content-type", "")
     if "application/json" in content_type:
@@ -67,9 +70,26 @@ async def create_product(
     image_url = data.get("image_url")
     sku = data.get("sku") or f"SKU-{str(uuid.uuid4().hex[:6]).upper()}"
     name_kh = data.get("name_kh")
+    
+    # Process variants (Sizes, Colors, Stock)
+    variants = data.get("variants") or []
+    if isinstance(variants, str):
+        try:
+            variants = json.loads(variants)
+        except Exception:
+            variants = []
+            
+    # If variants provided with stock, calculate total stock from variants
+    if variants and isinstance(variants, list):
+        variant_total_stock = sum(int(v.get("stock", 0)) for v in variants if isinstance(v, dict))
+        if variant_total_stock > 0 and stock == 0:
+            stock = variant_total_stock
 
-    # 1. Generate text for embedding
-    product_text = f"Product Name: {name}. Khmer Name: {name_kh or ''}. SKU: {sku}. Category: {category}. Price: ${price}. Description: {description}"
+    # 1. Generate text for embedding (including variant sizes & colors)
+    variant_text = ""
+    if variants:
+        variant_text = f" Available Variants: {', '.join([f'{v.get('size', '')} {v.get('color', '')}'.strip() for v in variants if isinstance(v, dict)])}"
+    product_text = f"Product Name: {name}. Khmer Name: {name_kh or ''}. SKU: {sku}. Category: {category}. Price: ${price}. Description: {description}.{variant_text}"
     
     # 2. Get vector from Gemini
     try:
@@ -110,6 +130,7 @@ async def create_product(
         description=description,
         price=price,
         stock=stock,
+        variants=variants,
         image_url=image_url,
         embedding=embedding
     )
@@ -122,16 +143,18 @@ async def create_product(
         "message": "Product saved successfully", 
         "id": str(new_product.id),
         "sku": new_product.sku,
-        "name": new_product.name
+        "name": new_product.name,
+        "variants_count": len(variants)
     }
 
+@router.get("")
 @router.get("/")
 async def get_products(
     seller_id: str = Depends(get_current_seller),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Fetches all products for the dashboard UI.
+    Fetches all products for the dashboard UI, including sizes, colors, and variant stocks.
     """
     result = await db.execute(
         select(Product)
@@ -147,8 +170,67 @@ async def get_products(
             "sku": p.sku or str(p.id)[:8],
             "price": float(p.price),
             "stock": int(p.stock),
+            "variants": p.variants or [],
             "category": p.category,
             "description": p.description,
             "image_url": p.image_url
         } for p in products
     ]
+
+class ProductUpdate(BaseModel):
+    stock: int | None = None
+    price: float | None = None
+    name: str | None = None
+    variants: list | None = None
+
+@router.patch('/{product_id}')
+async def update_product(
+    product_id: str,
+    req: ProductUpdate,
+    seller_id: str = Depends(get_current_seller),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Product).where(Product.id == uuid.UUID(product_id), Product.seller_id == uuid.UUID(seller_id))
+    result = await db.execute(stmt)
+    prod = result.scalar_one_or_none()
+    if not prod:
+        raise HTTPException(status_code=404, detail='Product not found')
+        
+    if req.variants is not None:
+        prod.variants = req.variants
+        # Auto-synchronize total stock from variants if variants provided
+        total_var_stock = sum(int(v.get("stock", 0)) for v in req.variants if isinstance(v, dict))
+        if total_var_stock >= 0:
+            prod.stock = total_var_stock
+    elif req.stock is not None:
+        prod.stock = max(0, req.stock)
+        
+    if req.price is not None:
+        prod.price = max(0.0, req.price)
+    if req.name is not None:
+        prod.name = req.name
+        
+    await db.commit()
+    return {
+        'status': 'success', 
+        'id': str(prod.id), 
+        'stock': prod.stock, 
+        'price': prod.price,
+        'variants': prod.variants or []
+    }
+
+@router.delete('/{product_id}')
+async def delete_product(
+    product_id: str,
+    seller_id: str = Depends(get_current_seller),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Product).where(Product.id == uuid.UUID(product_id), Product.seller_id == uuid.UUID(seller_id))
+    result = await db.execute(stmt)
+    prod = result.scalar_one_or_none()
+    if not prod:
+        raise HTTPException(status_code=404, detail='Product not found')
+        
+    await db.delete(prod)
+    await db.commit()
+    return {'status': 'success', 'message': 'Product deleted successfully'}

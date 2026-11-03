@@ -1,19 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 from pydantic import BaseModel
 import uuid
 from app.core.db import get_db
 from app.models.order import Order
 from app.models.shop import Shop
+from app.models.product import Product
+from app.models.user import User
 from app.core.auth import get_current_seller
+from app.integrations.logistics import generate_jnt_waybill, generate_vet_waybill
 
 router = APIRouter()
 
 class OrderStatusUpdate(BaseModel):
     status: str
-
-from sqlalchemy import select, func
 
 @router.get("/", summary="List all orders for the seller's shops")
 async def list_orders(
@@ -22,7 +23,6 @@ async def list_orders(
     db: AsyncSession = Depends(get_db), 
     seller_id: str = Depends(get_current_seller)
 ):
-    # Find all shops owned by this seller
     result = await db.execute(select(Shop).where(Shop.owner_id == uuid.UUID(seller_id)))
     shops = result.scalars().all()
     shop_ids = [s.id for s in shops]
@@ -30,11 +30,9 @@ async def list_orders(
     if not shop_ids:
         return {"data": [], "total": 0}
         
-    # Get total count
     count_result = await db.execute(select(func.count(Order.id)).where(Order.shop_id.in_(shop_ids)))
     total = count_result.scalar()
     
-    # Get paginated orders for these shops
     order_result = await db.execute(
         select(Order)
         .where(Order.shop_id.in_(shop_ids))
@@ -65,15 +63,44 @@ async def update_order_status(
     if not shop or str(shop.owner_id) != seller_id:
         raise HTTPException(status_code=403, detail="Not authorized to modify this order")
         
+    old_status = order.status
     order.status = update.status
+    
+    # Automatic Inventory Stock Restoration if Order is Cancelled
+    if update.status == "CANCELLED" and old_status != "CANCELLED":
+        if order.items and isinstance(order.items, dict):
+            sku = order.items.get("sku")
+            qty = int(order.items.get("qty", 1))
+            size = order.items.get("size")
+            color = order.items.get("color")
+            
+            p_stmt = select(Product).where(
+                Product.seller_id == shop.owner_id,
+                or_(
+                    Product.sku == sku,
+                    Product.name == order.items.get("name")
+                )
+            )
+            p_res = await db.execute(p_stmt)
+            prod = p_res.scalars().first()
+            if prod:
+                prod.stock = int(prod.stock) + qty
+                if prod.variants and isinstance(prod.variants, list):
+                    updated_variants = []
+                    for v in prod.variants:
+                        if isinstance(v, dict):
+                            match_s = not size or str(v.get("size", "")).strip().lower() == str(size).strip().lower()
+                            match_c = not color or str(v.get("color", "")).strip().lower() == str(color).strip().lower()
+                            if match_s and match_c:
+                                v["stock"] = int(v.get("stock", 0)) + qty
+                            updated_variants.append(v)
+                    prod.variants = updated_variants
+                    
     await db.commit()
     return {"status": "success", "message": "Order updated", "new_status": order.status}
 
 class WaybillRequest(BaseModel):
     provider: str # "J&T" or "VET"
-
-from app.integrations.logistics import generate_jnt_waybill, generate_vet_waybill
-from app.models.user import User
 
 @router.post("/{order_id}/waybill", summary="Generate shipping waybill")
 async def generate_waybill(
@@ -88,37 +115,38 @@ async def generate_waybill(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
         
-    # Verify ownership
     shop_result = await db.execute(select(Shop).where(Shop.id == order.shop_id))
     shop = shop_result.scalar_one_or_none()
     if not shop or str(shop.owner_id) != seller_id:
         raise HTTPException(status_code=403, detail="Not authorized to modify this order")
 
-    # Ensure paid or confirmed COD
     if order.status not in ["PAID", "CONFIRMED", "COD"]:
         raise HTTPException(status_code=400, detail="Cannot generate waybill for unpaid order (must be PAID, CONFIRMED, or COD)")
 
-    # Get customer details
-    user_result = await db.execute(select(User).where(User.id == order.user_id))
-    user = user_result.scalar_one_or_none()
-    
-    phone = (user.phone_number if user and user.phone_number else None) or getattr(order, "customer_phone", None) or "012 884 921"
-    address = (user.delivery_address if user and user.delivery_address else None) or getattr(order, "delivery_address", None) or "Phnom Penh, Cambodia"
-
-    # Normalize provider
-    provider_clean = req.provider.strip().upper()
-    if "J&T" in provider_clean or "JT" in provider_clean:
-        waybill = await generate_jnt_waybill(order.id, phone, address, order.items or {})
-    elif "VET" in provider_clean or "VIRAK" in provider_clean or "BUNTHAM" in provider_clean:
-        waybill = await generate_vet_waybill(order.id, phone, address, order.items or {})
+    if req.provider == "J&T":
+        waybill_data = await generate_jnt_waybill(
+            order_id=order.id,
+            customer_phone=order.customer_phone or "012000000",
+            customer_address=order.delivery_address or "Phnom Penh",
+            items=order.items
+        )
     else:
-        raise HTTPException(status_code=400, detail=f"Invalid provider: {req.provider}. Use 'J&T Express' or 'Virak Buntham'")
+        waybill_data = await generate_vet_waybill(
+            order_id=order.id,
+            customer_phone=order.customer_phone or "012000000",
+            customer_address=order.delivery_address or "Phnom Penh",
+            items=order.items
+        )
 
-    # Update order
-    order.tracking_number = waybill["tracking_number"]
-    order.waybill_url = waybill["waybill_url"]
-    order.logistics_provider = waybill["provider"]
+    order.tracking_number = waybill_data["tracking_number"]
+    order.waybill_url = waybill_data["waybill_url"]
+    order.logistics_provider = waybill_data["provider"]
     order.status = "SHIPPED"
     
     await db.commit()
-    return waybill
+    
+    return {
+        "status": "success",
+        "waybill": waybill_data,
+        "order_status": order.status
+    }

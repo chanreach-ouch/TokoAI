@@ -102,7 +102,7 @@ export default function AnalyticsPage() {
       <Card className="p-6 h-[440px] flex flex-col border border-slate-200/80 bg-white shadow-sm rounded-3xl">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-[#EA580C]">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-[#1B38A6]">
               <BarChart2 size={18} />
             </div>
             <div>
@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
                 cursor={{ fill: 'rgba(234,88,12,0.04)' }}
               />
               <Legend wrapperStyle={{ paddingTop: '16px', fontSize: '11px', color: '#64748B' }} />
-              <Bar dataKey="aiPilot" name="AI Auto-Pilot ($)" stackId="a" fill="#EA580C" radius={[0, 0, 4, 4]} />
+              <Bar dataKey="aiPilot" name="AI Auto-Pilot ($)" stackId="a" fill="#1B38A6" radius={[0, 0, 4, 4]} />
               <Bar dataKey="human"   name="Human Admin ($)"   stackId="a" fill="#CBD5E1" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

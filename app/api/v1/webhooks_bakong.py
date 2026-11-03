@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.db import get_db
 from app.models.order import Order
-from app.models.chat import Message
+from app.models.chat import Conversation, Message
 from app.models.customer import Customer
 import uuid
 
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/webhooks/bakong", tags=["Webhooks"])
 async def bakong_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Secure endpoint that listens for Bakong Bank's success pings.
-    The AI does NOT use vision to verify payments. This webhook handles it securely.
+    Updates order status to PAID and credits customer LTV in the CRM.
     """
     data = await request.json()
     
@@ -35,7 +35,7 @@ async def bakong_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             if tx_id:
                 order.khqr_md5 = str(tx_id)
             
-            # 2. Update Customer LTV if customer linked
+            # 2. Update Chat Thread & Customer CRM LTV
             if chat_id:
                 try:
                     chat_uuid = uuid.UUID(str(chat_id))
@@ -47,6 +47,21 @@ async def bakong_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                         content=f"✅ ការទូទាត់ប្រាក់ជោគជ័យ! Payment Received: ${amount:.2f} via Bakong (TxID: {tx_id}). Your order is now being processed."
                     )
                     db.add(msg)
+                    
+                    # Update Customer LTV & order count
+                    conv_res = await db.execute(select(Conversation).where(Conversation.id == chat_uuid))
+                    conv = conv_res.scalar_one_or_none()
+                    if conv and conv.customer_platform_id:
+                        cust_res = await db.execute(
+                            select(Customer).where(
+                                Customer.shop_id == order.shop_id,
+                                Customer.platform_id == conv.customer_platform_id
+                            )
+                        )
+                        cust = cust_res.scalar_one_or_none()
+                        if cust:
+                            cust.lifetime_value_usd = float(cust.lifetime_value_usd or 0.0) + amount
+                            cust.total_orders = int(cust.total_orders or 0) + 1
                 except Exception:
                     pass
             
