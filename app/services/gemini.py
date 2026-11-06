@@ -4,7 +4,7 @@ from google import genai
 from google.genai import types
 
 api_key = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=api_key) if api_key else None
+client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"}) if api_key else None
 
 def embed_text(text: str) -> list[float]:
     """
@@ -15,8 +15,9 @@ def embed_text(text: str) -> list[float]:
     
     try:
         result = client.models.embed_content(
-            model="text-embedding-004",
+            model="gemini-embedding-001",
             contents=text,
+            config=types.EmbedContentConfig(output_dimensionality=768)
         )
         return result.embeddings[0].values
     except Exception:

@@ -24,7 +24,7 @@ from app.agent.prompts import SYSTEM_PROMPT, get_system_prompt
 from app.agent.tools.khqr_generator import generate_khqr_payload
 from app.agent.tools.address_parser import parse_address_and_phone
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options={"api_version": "v1beta"})
 
 async def load_image_part(image_url: str | None, image_bytes: bytes | None = None, mime_type: str = "image/jpeg") -> types.Part | None:
     """
@@ -76,8 +76,9 @@ async def retrieve_relevant_products(query: str, session, shop_id, top_k=4):
         products = []
         try:
             response = client.models.embed_content(
-                model="text-embedding-004",
+                model="gemini-embedding-001",
                 contents=query,
+                config=types.EmbedContentConfig(output_dimensionality=768)
             )
             query_embedding = response.embeddings[0].values
             

@@ -10,14 +10,13 @@ from app.models.shop import Shop
 from app.models.product import Product
 from app.models.faq import FAQ
 from app.models.customer import Customer
+from app.models.user import User
 from app.models.chat import Conversation, Message
 from app.models.order import Order
 from app.models.seller_persona import SellerPersonaProfile
 from app.models.payment_transaction import PaymentTransaction
 from app.config import settings
-
-def embed_text(text: str) -> list[float]:
-    return [0.0] * 768
+from app.services.gemini import embed_text
 
 async def seed():
     engine = create_async_engine(settings.DATABASE_URL)
@@ -225,6 +224,21 @@ async def seed():
         session.add_all([cust1, cust2])
         await session.flush()
 
+        u1 = User(
+            shop_id=shop.id,
+            tiktok_open_id=cust1.platform_id,
+            phone_number=cust1.phone,
+            delivery_address=cust1.shipping_address
+        )
+        u2 = User(
+            shop_id=shop.id,
+            tiktok_open_id=cust2.platform_id,
+            phone_number=cust2.phone,
+            delivery_address=cust2.shipping_address
+        )
+        session.add_all([u1, u2])
+        await session.flush()
+
         # 7. Seed Conversations & Messages
         now = datetime.now(timezone.utc)
         
@@ -274,7 +288,7 @@ async def seed():
         # 8. Seed Completed Orders & Payment Transactions for Predictive BI
         ord1 = Order(
             shop_id=shop.id,
-            user_id=cust1.id,
+            user_id=u1.id,
             items={"sku": "KZ-STREET-TEE", "name": "Oversized Streetwear Tee", "qty": 2, "unit_price": 18.00},
             total_amount_usd=37.50,
             payment_method="KHQR",
@@ -286,7 +300,7 @@ async def seed():
         )
         ord2 = Order(
             shop_id=shop.id,
-            user_id=cust2.id,
+            user_id=u2.id,
             items={"sku": "GLOW-VIT-C", "name": "Glow Vitamin C Serum", "qty": 1, "unit_price": 22.00},
             total_amount_usd=24.50,
             payment_method="COD",

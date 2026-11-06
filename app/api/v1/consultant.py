@@ -20,7 +20,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/consultant", tags=["AI Business Consultant"])
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options={"api_version": "v1beta"})
 
 class ConsultantChatRequest(BaseModel):
     message: str

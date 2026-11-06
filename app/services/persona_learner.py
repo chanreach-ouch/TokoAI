@@ -10,7 +10,7 @@ from app.models.seller_persona import SellerPersonaProfile
 from app.models.shop import Shop
 
 logger = logging.getLogger(__name__)
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options={"api_version": "v1beta"})
 
 async def extract_seller_persona_from_transcripts(transcripts: str) -> Dict[str, Any]:
     """

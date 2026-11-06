@@ -6,13 +6,9 @@ import uuid
 import sys
 import os
 
-# Try to load the secret from .env if it exists
-try:
-    with open(".env", "r") as f:
-        env_lines = f.readlines()
-    secret = next((line.split("=")[1].strip() for line in env_lines if line.startswith("TIKTOK_APP_SECRET=")), "default_secret")
-except Exception:
-    secret = "default_secret"
+from app.config import settings
+
+secret = settings.TIKTOK_APP_SECRET or os.getenv("TIKTOK_APP_SECRET", "default_secret")
 
 message_text = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "How much is the black streetwear tee?"
 
