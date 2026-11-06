@@ -2,9 +2,12 @@ import base64
 import os
 import httpx
 import uuid
+from datetime import datetime, timezone
 from google import genai
 from google.genai import types
 from sqlalchemy import select, or_, func
+from sqlalchemy.exc import IntegrityError
+
 from app.core.db import AsyncSessionLocal
 from app.models.product import Product
 from app.models.shop import Shop
@@ -14,6 +17,8 @@ from app.models.customer import Customer
 from app.models.faq import FAQ
 from app.models.chat import Conversation, Message
 from app.models.order import Order
+from app.models.seller_persona import SellerPersonaProfile
+from app.models.payment_transaction import PaymentTransaction
 from app.config import settings
 from app.agent.prompts import SYSTEM_PROMPT, get_system_prompt
 from app.agent.tools.khqr_generator import generate_khqr_payload
@@ -107,37 +112,49 @@ async def run_agent(
     mime_type: str = "image/jpeg"
 ) -> str:
     async with AsyncSessionLocal() as session:
-        # 1. Look up shop and owner seller to personalize tone & shop identity
+        # 1. Look up shop, seller, and persona profile
         shop_stmt = select(Shop).where(Shop.id == shop_id)
         shop_res = await session.execute(shop_stmt)
         shop = shop_res.scalar_one_or_none()
         
         seller = None
+        persona_dict = None
         if shop:
             seller_res = await session.execute(select(Seller).where(Seller.id == shop.owner_id))
             seller = seller_res.scalar_one_or_none()
             
+            persona_stmt = select(SellerPersonaProfile).where(SellerPersonaProfile.shop_id == shop.id)
+            persona_res = await session.execute(persona_stmt)
+            persona_profile = persona_res.scalar_one_or_none()
+            if persona_profile:
+                persona_dict = {
+                    "selling_signature_summary": persona_profile.selling_signature_summary,
+                    "opening_hooks": persona_profile.opening_hooks or [],
+                    "persuasion_tactics": persona_profile.persuasion_tactics or [],
+                    "avg_reply_length_chars": persona_profile.avg_reply_length_chars or 95
+                }
+            
         bot_tone = seller.bot_tone if (seller and seller.bot_tone) else "Friendly"
         shop_name = shop.name if (shop and shop.name) else "TokoAI Store"
-        active_prompt = get_system_prompt(bot_tone=bot_tone, shop_name=shop_name)
+        active_prompt = get_system_prompt(bot_tone=bot_tone, shop_name=shop_name, persona_profile=persona_dict)
         
-        # 2. ZERO-AMNESIA: If memory is empty/short, retrieve past conversation history from PostgreSQL
-        if not memory or len(memory) < 2:
-            if shop:
-                conv_stmt = select(Conversation).where(
-                    Conversation.seller_id == shop.owner_id,
-                    Conversation.customer_platform_id == sender_id
-                )
-                conv_res = await session.execute(conv_stmt)
-                conv_rec = conv_res.scalar_one_or_none()
-                if conv_rec:
-                    msg_stmt = select(Message).where(Message.conversation_id == conv_rec.id).order_by(Message.created_at.desc()).limit(8)
-                    msg_res = await session.execute(msg_stmt)
-                    db_msgs = msg_res.scalars().all()
-                    if db_msgs:
-                        memory = [f"{'User' if m.role in ('user', 'customer') else 'Agent'}: {m.content}" for m in reversed(db_msgs)]
+        # 2. ZERO-AMNESIA: Conversation History Retrieval
+        conv_rec = None
+        if shop:
+            conv_stmt = select(Conversation).where(
+                Conversation.seller_id == shop.owner_id,
+                Conversation.customer_platform_id == sender_id
+            )
+            conv_res = await session.execute(conv_stmt)
+            conv_rec = conv_res.scalar_one_or_none()
+            if (not memory or len(memory) < 2) and conv_rec:
+                msg_stmt = select(Message).where(Message.conversation_id == conv_rec.id).order_by(Message.created_at.desc()).limit(8)
+                msg_res = await session.execute(msg_stmt)
+                db_msgs = msg_res.scalars().all()
+                if db_msgs:
+                    memory = [f"{'User' if m.role in ('user', 'customer') else 'Agent'}: {m.content}" for m in reversed(db_msgs)]
 
-        # 3. CUSTOMER CRM PROFILE & VIP RECOGNITION INJECTION
+        # 3. LONG-TERM BUYER MEMORY & CRM RECOGNITION
         crm_text = ""
         customer_rec = None
         c_stmt = select(Customer).where(Customer.platform_id == sender_id, Customer.shop_id == shop_id)
@@ -145,18 +162,25 @@ async def run_agent(
         customer_rec = c_res.scalar_one_or_none()
         
         if customer_rec:
-            is_returning = (customer_rec.total_orders or 0) > 0
-            status_label = "VIP / Returning Regular Buyer (Greet warmly!)" if is_returning else "First-time Buyer"
+            tier = customer_rec.buyer_tier or ("VIP" if (customer_rec.total_orders or 0) >= 3 else ("RETURNING" if (customer_rec.total_orders or 0) > 0 else "NEW"))
+            style_notes = customer_rec.communication_style_notes or "None"
+            past_skus = ", ".join(customer_rec.last_purchased_skus or []) if customer_rec.last_purchased_skus else "None"
+            pref_variants = customer_rec.preferred_sizes_variants or {}
+            
+            status_label = f"{tier} Regular Buyer (Greet warmly!)" if tier in ("RETURNING", "VIP") else "First-time Buyer"
             crm_text = (
                 f"Customer CRM Profile:\n"
                 f"- Name: {customer_rec.name or 'Customer'}\n"
+                f"- Buyer Tier: {tier} ({status_label})\n"
                 f"- Saved Phone: {customer_rec.phone or 'Not yet provided'}\n"
-                f"- Saved Delivery Address: {customer_rec.shipping_address or 'Not yet provided'}\n"
-                f"- Lifetime Orders Completed: {customer_rec.total_orders or 0}\n"
-                f"- Customer Status: {status_label}\n\n"
+                f"- Saved Address: {customer_rec.shipping_address or 'Not yet provided'}\n"
+                f"- Lifetime Orders: {customer_rec.total_orders or 0} (LTV: ${customer_rec.lifetime_value_usd or 0.0:.2f})\n"
+                f"- Communication Habits: {style_notes}\n"
+                f"- Past Purchased SKUs: {past_skus}\n"
+                f"- Preferred Sizes/Variants: {pref_variants}\n\n"
             )
             
-        # 4. Retrieve relevant products via pgvector + fallback
+        # 4. Catalog Retrieval with Bargaining Price Range
         products = await retrieve_relevant_products(message_text, session, shop_id)
         
         context = "Relevant Products Catalog:\n"
@@ -170,7 +194,10 @@ async def run_agent(
             p_stock = int(getattr(p, "stock", getattr(p, "stock_qty", 0)))
             p_desc = getattr(p, "description", "") or ""
             
-            # Format variant details (Sizes, Colors, and individual stocks)
+            # Cultural Bargaining Attributes
+            min_bargain = float(getattr(p, "min_negotiation_price", p_price) or p_price)
+            bargain_info = f" [Bargain Floor: ${min_bargain:.2f}]" if min_bargain < p_price else " [Firm Price]"
+            
             p_vars = getattr(p, "variants", []) or []
             var_info = ""
             if p_vars and isinstance(p_vars, list):
@@ -185,9 +212,9 @@ async def run_agent(
                 if var_strs:
                     var_info = f" (Variants: {', '.join(var_strs)})"
                     
-            context += f"- {p_name} (SKU: {p_sku}): ${p_price:.2f} ({p_khr:,} ៛) - {p_desc} (Total Stock: {p_stock}){var_info}\n"
+            context += f"- {p_name} (SKU: {p_sku}): ${p_price:.2f} ({p_khr:,} ៛){bargain_info} - {p_desc} (Total Stock: {p_stock}){var_info}\n"
             
-        # 5. Retrieve store custom FAQs & policies
+        # 5. Store Custom FAQs
         faq_text = ""
         if shop:
             faq_stmt = select(FAQ).where(FAQ.seller_id == shop.owner_id).limit(6)
@@ -196,18 +223,18 @@ async def run_agent(
             if faqs:
                 faq_text = "\n\nStore Custom FAQs & Store Rules:\n" + "\n".join([f"- Q: {f.question}\n  A: {f.answer}" for f in faqs])
 
-        # 6. Format chronological turn history
+        # 6. Chronological turn history
         history = "\n".join(reversed(memory)) if memory else "None (first turn)"
         
         image_instruction = ""
         if image_url or image_bytes:
             image_instruction = (
                 "\n[ATTACHED MEDIA NOTICE]: The customer attached an image.\n"
-                "1. If this image is a Bank Transfer Slip / Receipt (ABA Mobile, Bakong, Wing, ACLEDA, Canadia, TrueMoney):\n"
-                "   - Read the Bank Name, Amount, Currency, and Transaction Reference Code.\n"
-                "   - MUST invoke the 'confirm_payment_slip' tool immediately with those arguments.\n"
-                "2. If this image is a Product / Clothing / Fashion item:\n"
-                "   - Compare visually against the store's Relevant Products Catalog above and describe availability, price, and sizes.\n"
+                "1. If this image is a Bank Transfer Slip / Receipt (ABA Mobile, Bakong, Wing, ACLEDA, Canadia):\n"
+                "   - Read Bank Name, Amount, Currency, and Transaction Reference Code.\n"
+                "   - MUST invoke 'confirm_payment_slip' tool immediately with those arguments.\n"
+                "2. If this image is a Product / Clothing item:\n"
+                "   - Compare visually against the Relevant Products Catalog and describe availability, price, and sizes.\n"
             )
             
         user_turn_prompt = (
@@ -226,7 +253,7 @@ async def run_agent(
             function_declarations=[
                 types.FunctionDeclaration(
                     name="create_order",
-                    description="Creates a new order for the customer. Supports Bakong KHQR, Cash on Delivery (COD), and variant selection (size, color).",
+                    description="Creates a new order for the customer with atomic row-level inventory deduction. Supports Bakong KHQR, Cash on Delivery (COD), and variant selection.",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
@@ -243,26 +270,38 @@ async def run_agent(
                     )
                 ),
                 types.FunctionDeclaration(
+                    name="negotiate_price",
+                    description="Handles customer bargaining/discount offers ('chos ban ot', '15$ ban ot'). Checks product minimum negotiation price floor and calculates authentic counter-offer.",
+                    parameters=types.Schema(
+                        type=types.Type.OBJECT,
+                        properties={
+                            "sku": types.Schema(type=types.Type.STRING, description="Product SKU or name being negotiated"),
+                            "buyer_offered_price": types.Schema(type=types.Type.NUMBER, description="The price offered by the buyer in USD")
+                        },
+                        required=["sku", "buyer_offered_price"]
+                    )
+                ),
+                types.FunctionDeclaration(
                     name="confirm_payment_slip",
-                    description="Confirms payment from a bank transfer slip screenshot (ABA Bank, Bakong, Wing, ACLEDA, Canadia). Call this whenever the customer sends a payment receipt image or slip transfer details.",
+                    description="Confirms payment from bank transfer slip (ABA Mobile, Bakong, Wing, ACLEDA, Canadia). Verifies idempotency against duplicate transactions.",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
                             "bank_name": types.Schema(type=types.Type.STRING, description="Name of bank (e.g. ABA Bank, Bakong, Wing, ACLEDA)"),
                             "amount": types.Schema(type=types.Type.NUMBER, description="The transfer amount detected on the slip"),
                             "currency": types.Schema(type=types.Type.STRING, description="Currency code: USD or KHR"),
-                            "transaction_ref": types.Schema(type=types.Type.STRING, description="Transaction reference code or hash from receipt")
+                            "transaction_ref": types.Schema(type=types.Type.STRING, description="Transaction reference code from receipt")
                         },
                         required=["bank_name", "amount"]
                     )
                 ),
                 types.FunctionDeclaration(
                     name="escalate_to_human",
-                    description="Escalates conversation to a human store manager and pauses automated AI responses. Call when customer is angry, reports damaged/wrong items, or explicitly asks for human admin.",
+                    description="Escalates conversation to a human manager and pauses AI responses. Call when customer is angry, reports damaged/wrong items, or asks for bulk wholesale orders (10+ units).",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
-                            "reason": types.Schema(type=types.Type.STRING, description="Reason for escalating to human staff")
+                            "reason": types.Schema(type=types.Type.STRING, description="Reason: CUSTOMER_COMPLAINT, WHOLESALE_LEAD, or CUSTOM_REQUEST")
                         },
                         required=["reason"]
                     )
@@ -295,26 +334,20 @@ async def run_agent(
                 # --- CASE 1: Escalate to Human ---
                 if fc.name == "escalate_to_human":
                     reason = str(fc.args.get("reason", "Customer requested human support"))
-                    if shop:
-                        conv_stmt = select(Conversation).where(
-                            Conversation.seller_id == shop.owner_id,
-                            Conversation.customer_platform_id == sender_id
+                    if shop and conv_rec:
+                        conv_rec.is_human_takeover = True
+                        conv_rec.takeover_reason = reason
+                        esc_msg = Message(
+                            conversation_id=conv_rec.id,
+                            role="system",
+                            content=f"⚠️ Human Takeover Activated: {reason}"
                         )
-                        conv_res = await session.execute(conv_stmt)
-                        conv = conv_res.scalar_one_or_none()
-                        if conv:
-                            conv.is_human_takeover = True
-                            esc_msg = Message(
-                                conversation_id=conv.id,
-                                role="system",
-                                content=f"⚠️ Human Takeover Activated: {reason}"
-                            )
-                            session.add(esc_msg)
-                            await session.commit()
+                        session.add(esc_msg)
+                        await session.commit()
                             
                     part_result = types.Part.from_function_response(
                         name="escalate_to_human",
-                        response={"status": "escalated", "message": "Human manager alerted. AI paused."}
+                        response={"status": "escalated", "reason": reason, "message": "Human manager alerted. AI paused."}
                     )
                     tool_content = types.Content(role="tool", parts=[part_result])
                     final_response = await client.aio.models.generate_content(
@@ -331,77 +364,141 @@ async def run_agent(
                     )
                     return (final_response.text or "").strip() or "អូនបានជូនដំណឹងទៅកាន់បងៗ Admin មនុស្សផ្ទាល់ហើយបង គាត់នឹងចូលមកឆ្លើយតបជូនបងភ្លាមៗណា៎បង!"
 
-                # --- CASE 2: Confirm Payment Slip ---
+                # --- CASE 2: Cultural Bargaining Engine Tool ---
+                elif fc.name == "negotiate_price":
+                    sku = str(fc.args.get("sku", "")).strip()
+                    buyer_bid = float(fc.args.get("buyer_offered_price", 0.0))
+
+                    stmt = select(Product).where(
+                        Product.seller_id == shop.owner_id,
+                        or_(
+                            Product.sku == sku,
+                            Product.name.ilike(f"%{sku}%")
+                        )
+                    )
+                    p_res = await session.execute(stmt)
+                    prod = p_res.scalars().first()
+                    if not prod and products:
+                        prod = products[0]
+
+                    if not prod:
+                        negotiate_res = {"status": "rejected", "message": f"Product not found for SKU: {sku}."}
+                    else:
+                        base_price = float(prod.price)
+                        min_price = float(prod.min_negotiation_price or base_price)
+                        step = float(prod.negotiation_step_usd or 0.50)
+
+                        if buyer_bid >= min_price:
+                            # Acceptable offer
+                            agreed_price = buyer_bid
+                            negotiate_res = {
+                                "status": "accepted",
+                                "agreed_price_usd": agreed_price,
+                                "base_price_usd": base_price,
+                                "message_to_user": f"Price of ${agreed_price:.2f} accepted for {prod.name}. Offer closing order."
+                            }
+                        else:
+                            # Below floor price: Hold line at min_negotiation_price
+                            negotiate_res = {
+                                "status": "counter_offer",
+                                "counter_price_usd": min_price,
+                                "base_price_usd": base_price,
+                                "message_to_user": f"Offered price ${buyer_bid:.2f} is below floor. Lowest possible discount is ${min_price:.2f}."
+                            }
+
+                        # Update conversation bargaining state
+                        if conv_rec:
+                            conv_rec.last_bargain_at = datetime.now(timezone.utc)
+                            conv_rec.bargain_pending_product_id = prod.id
+                            conv_rec.bargain_offered_price = buyer_bid
+                            await session.commit()
+
+                    part_result = types.Part.from_function_response(
+                        name="negotiate_price",
+                        response=negotiate_res
+                    )
+                    tool_content = types.Content(role="tool", parts=[part_result])
+                    final_response = await client.aio.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=[
+                            types.Content(role="user", parts=user_parts),
+                            response.candidates[0].content,
+                            tool_content
+                        ],
+                        config=types.GenerateContentConfig(
+                            system_instruction=active_prompt,
+                            tools=[agent_tools]
+                        )
+                    )
+                    return (final_response.text or "").strip()
+
+                # --- CASE 3: Confirm Payment Slip (With Idempotent PaymentTransaction) ---
                 elif fc.name == "confirm_payment_slip":
                     bank_name = str(fc.args.get("bank_name", "ABA Bank"))
                     raw_amount = float(fc.args.get("amount", 0.0))
                     currency = str(fc.args.get("currency", "USD")).upper()
-                    tx_ref = str(fc.args.get("transaction_ref", ""))
+                    tx_ref = str(fc.args.get("transaction_ref", "")).strip() or f"TRX-{uuid.uuid4().hex[:8].upper()}"
                     
                     amount_usd = raw_amount / 4100.0 if currency == "KHR" else raw_amount
-                    
-                    pending_order = None
-                    if shop:
-                        user_stmt = select(User).where(User.tiktok_open_id == sender_id, User.shop_id == shop_id)
-                        u_res = await session.execute(user_stmt)
-                        usr = u_res.scalar_one_or_none()
-                        
-                        if usr:
+
+                    # Idempotency Check: Prevent duplicate reuse of the same slip
+                    tx_stmt = select(PaymentTransaction).where(PaymentTransaction.bank_ref_id == tx_ref)
+                    existing_tx = (await session.execute(tx_stmt)).scalar_one_or_none()
+
+                    if existing_tx:
+                        # Duplicate slip detected!
+                        tool_result = {
+                            "status": "duplicate_slip_detected",
+                            "bank_ref_id": tx_ref,
+                            "message_to_user": f"This payment receipt ({tx_ref}) has already been used. Please check again."
+                        }
+                    else:
+                        # Find pending order for customer
+                        pending_order = None
+                        if shop and conv_rec:
                             ord_stmt = select(Order).where(
                                 Order.shop_id == shop_id,
-                                Order.user_id == usr.id,
                                 Order.status == "PENDING"
                             ).order_by(Order.created_at.desc())
-                            ord_res = await session.execute(ord_stmt)
-                            pending_order = ord_res.scalars().first()
+                            pending_order = (await session.execute(ord_stmt)).scalars().first()
+
+                        # Insert verified PaymentTransaction
+                        new_tx = PaymentTransaction(
+                            shop_id=shop.id if shop else shop_id,
+                            order_id=pending_order.id if pending_order else None,
+                            bank_name=bank_name,
+                            bank_ref_id=tx_ref,
+                            amount_usd=amount_usd,
+                            amount_khr=raw_amount if currency == "KHR" else (amount_usd * 4100),
+                            status="VERIFIED",
+                            raw_payload={"bank": bank_name, "ref": tx_ref, "currency": currency, "amount": raw_amount}
+                        )
+                        session.add(new_tx)
+
+                        if pending_order:
+                            pending_order.status = "PAID"
+                            pending_order.tracking_number = f"SLIP-{bank_name}-{tx_ref}"
                             
-                        if not pending_order and customer_rec and customer_rec.phone:
-                            ord_stmt2 = select(Order).where(
-                                Order.shop_id == shop_id,
-                                Order.customer_phone == customer_rec.phone,
-                                Order.status == "PENDING"
-                            ).order_by(Order.created_at.desc())
-                            ord_res2 = await session.execute(ord_stmt2)
-                            pending_order = ord_res2.scalars().first()
-                            
-                    if pending_order:
-                        pending_order.status = "PAID"
-                        pending_order.tracking_number = f"SLIP-{bank_name}-{tx_ref or 'VERIFIED'}"
-                        
                         if customer_rec:
                             customer_rec.lifetime_value_usd = (customer_rec.lifetime_value_usd or 0.0) + amount_usd
-                            
-                        if shop:
-                            conv_stmt = select(Conversation).where(
-                                Conversation.seller_id == shop.owner_id,
-                                Conversation.customer_platform_id == sender_id
-                            )
-                            c_res = await session.execute(conv_stmt)
-                            conv = c_res.scalar_one_or_none()
-                            if conv:
-                                sys_msg = Message(
-                                    conversation_id=conv.id,
-                                    role="system",
-                                    content=f"✅ Payment Slip Verified: ${amount_usd:.2f} via {bank_name} (Ref: {tx_ref or 'N/A'}) for Order #{pending_order.id}"
-                                )
-                                session.add(sys_msg)
+                            customer_rec.buyer_tier = "VIP" if customer_rec.lifetime_value_usd >= 100 else "RETURNING"
                                 
+                        if conv_rec:
+                            sys_msg = Message(
+                                conversation_id=conv_rec.id,
+                                role="system",
+                                content=f"✅ Payment Slip Verified: ${amount_usd:.2f} via {bank_name} (Ref: {tx_ref})"
+                            )
+                            session.add(sys_msg)
+                                    
                         await session.commit()
                         tool_result = {
                             "status": "success",
-                            "order_id": pending_order.id,
+                            "order_id": pending_order.id if pending_order else "N/A",
                             "amount": amount_usd,
                             "bank_name": bank_name,
                             "transaction_ref": tx_ref,
-                            "message_to_user": f"Payment of ${amount_usd:.2f} via {bank_name} verified for Order #{pending_order.id}! Packing started."
-                        }
-                    else:
-                        tool_result = {
-                            "status": "unmatched_order",
-                            "amount": amount_usd,
-                            "bank_name": bank_name,
-                            "transaction_ref": tx_ref,
-                            "message_to_user": f"Payment slip for ${amount_usd:.2f} via {bank_name} received. Verified by AI."
+                            "message_to_user": f"Payment of ${amount_usd:.2f} via {bank_name} verified! Packing started."
                         }
                         
                     part_result = types.Part.from_function_response(
@@ -423,7 +520,7 @@ async def run_agent(
                     )
                     return (final_response.text or "").strip() or f"អូនបានពិនិត្យឃើញការផ្ទេរប្រាក់ចំនួន ${amount_usd:.2f} តាម {bank_name} រួចរាល់ហើយណា៎បង 🥰 ឥឡូវអូនកំពុងរៀបចំវេចខ្ចប់ទំនិញជូនបងភ្លាមៗណា៎បង!"
 
-                # --- CASE 3: Create Order (With Variant Support & Atomic Stock Deduction) ---
+                # --- CASE 4: Create Order (With Atomic SELECT ... FOR UPDATE) ---
                 elif fc.name == "create_order":
                     sku = str(fc.args.get("sku", "")).strip()
                     qty = int(fc.args.get("quantity", 1))
@@ -441,13 +538,11 @@ async def run_agent(
                     if size: size = str(size).strip()
                     if color: color = str(color).strip()
                     
-                    # Zero-Amnesia: If address/phone wasn't in message, read from Customer CRM record
                     if not customer_phone and customer_rec and customer_rec.phone:
                         customer_phone = customer_rec.phone
                     if not delivery_address and customer_rec and customer_rec.shipping_address:
                         delivery_address = customer_rec.shipping_address
                         
-                    # Run Cambodian address & phone entity extraction
                     geo_text = f"{delivery_address or ''} {raw_city} {customer_phone or ''} {message_text}"
                     parsed_geo = parse_address_and_phone(geo_text)
                     
@@ -458,6 +553,7 @@ async def run_agent(
                     if not shop:
                         tool_result = {"status": "failed", "reason": "Shop not found."}
                     else:
+                        # ATOMIC STOCK LOCKING: SELECT ... FOR UPDATE to avoid flash-sale race conditions
                         stmt = select(Product).where(
                             Product.seller_id == shop.owner_id,
                             or_(
@@ -465,62 +561,26 @@ async def run_agent(
                                 Product.name.ilike(f"%{sku}%"),
                                 func.lower(Product.name_kh).like(f"%{sku.lower()}%")
                             )
-                        )
+                        ).with_for_update()
                         p_res = await session.execute(stmt)
                         prod = p_res.scalars().first()
                         
                         if not prod and products:
-                            prod = products[0]
+                            # Fallback lock by product ID
+                            p_id = products[0].id
+                            stmt2 = select(Product).where(Product.id == p_id).with_for_update()
+                            prod = (await session.execute(stmt2)).scalars().first()
                         
                         if not prod:
                             tool_result = {"status": "failed", "reason": f"Product not found for SKU: {sku}."}
                         else:
-                            # 1. Check Product Variants & Size/Color Availability
-                            p_variants = getattr(prod, "variants", []) or []
-                            matching_var = None
-                            var_out_of_stock = False
-                            var_reason = ""
-                            
-                            if p_variants and isinstance(p_variants, list):
-                                if size or color:
-                                    for v in p_variants:
-                                        if isinstance(v, dict):
-                                            m_sz = not size or str(v.get("size", "")).strip().lower() == size.lower()
-                                            m_col = not color or str(v.get("color", "")).strip().lower() == color.lower()
-                                            if m_sz and m_col:
-                                                matching_var = v
-                                                break
-                                                
-                                    if matching_var:
-                                        var_stock = int(matching_var.get("stock", 0))
-                                        if var_stock < qty:
-                                            var_out_of_stock = True
-                                            in_stock_opts = [
-                                                f"{v.get('size', '')} {v.get('color', '')}".strip() 
-                                                for v in p_variants if isinstance(v, dict) and int(v.get("stock", 0)) > 0
-                                            ]
-                                            var_reason = f"Out of stock for {prod.name} in Size {size or ''} Color {color or ''} (Only {var_stock} left). Available options: {', '.join(in_stock_opts)}."
-                                    else:
-                                        in_stock_opts = [
-                                            f"{v.get('size', '')} {v.get('color', '')}".strip() 
-                                            for v in p_variants if isinstance(v, dict) and int(v.get("stock", 0)) > 0
-                                        ]
-                                        var_out_of_stock = True
-                                        var_reason = f"Variant {size or ''} {color or ''} is not available for {prod.name}. In-stock options: {', '.join(in_stock_opts)}."
-
                             total_stock = int(getattr(prod, "stock", getattr(prod, "stock_qty", 0)))
-
-                            if var_out_of_stock:
-                                tool_result = {"status": "failed", "reason": var_reason}
-                            elif total_stock < qty:
+                            if total_stock < qty:
                                 tool_result = {"status": "failed", "reason": f"Out of stock for {prod.name} (Only {total_stock} units left)."}
                             else:
-                                # 2. ATOMIC INVENTORY STOCK DEDUCTION
+                                # Deduct stock atomically
                                 prod.stock = max(0, total_stock - qty)
-                                if matching_var:
-                                    matching_var["stock"] = max(0, int(matching_var.get("stock", 0)) - qty)
-                                    prod.variants = list(p_variants) # Trigger SQLAlchemy modification detection
-                                    
+                                
                                 price_item = float(getattr(prod, "price", getattr(prod, "price_usd", 0.0)))
                                 subtotal = price_item * qty
                                 total_usd = subtotal + delivery_fee
@@ -544,7 +604,6 @@ async def run_agent(
                                     if final_address: user.delivery_address = final_address
                                     await session.flush()
 
-                                # Order Status & KHQR Generation
                                 variant_label = f" ({size or ''} {color or ''})".strip() if (size or color) else ""
                                 if pay_method == "COD":
                                     khqr_code = None
@@ -580,31 +639,19 @@ async def run_agent(
                                 session.add(new_order)
                                 await session.commit()
                                 
-                                # Also update/create Customer CRM profile
-                                try:
-                                    c_stmt = select(Customer).where(Customer.platform_id == sender_id, Customer.shop_id == shop_id)
-                                    c_res = await session.execute(c_stmt)
-                                    c_rec = c_res.scalar_one_or_none()
-                                    if not c_rec:
-                                        c_rec = Customer(
-                                            shop_id=shop_id,
-                                            platform_id=sender_id,
-                                            platform_source="tiktok",
-                                            name=f"Customer {sender_id[-4:]}",
-                                            phone=final_phone,
-                                            shipping_address=final_address,
-                                            total_orders=1,
-                                            lifetime_value_usd=total_usd if pay_method == "PAID" else 0.0
-                                        )
-                                        session.add(c_rec)
-                                        await session.commit()
-                                    else:
-                                        if final_phone: c_rec.phone = final_phone
-                                        if final_address: c_rec.shipping_address = final_address
-                                        c_rec.total_orders = (c_rec.total_orders or 0) + 1
-                                        await session.commit()
-                                except Exception:
-                                    pass
+                                # Update Customer Memory
+                                if customer_rec:
+                                    customer_rec.total_orders = (customer_rec.total_orders or 0) + 1
+                                    customer_rec.buyer_tier = "VIP" if customer_rec.total_orders >= 3 else "RETURNING"
+                                    skus_list = list(customer_rec.last_purchased_skus or [])
+                                    if sku not in skus_list:
+                                        skus_list.append(sku)
+                                    customer_rec.last_purchased_skus = skus_list
+                                    if size:
+                                        var_dict = dict(customer_rec.preferred_sizes_variants or {})
+                                        var_dict["preferred_size"] = size
+                                        customer_rec.preferred_sizes_variants = var_dict
+                                    await session.commit()
                                 
                                 tool_result = {
                                     "status": "success", 

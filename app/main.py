@@ -12,6 +12,8 @@ from app.api.v1.inbox import router as inbox_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.customers import router as customers_router
+from app.api.v1.social_comments import router as social_comments_router
+from app.api.v1.consultant import router as consultant_router
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -19,21 +21,22 @@ from slowapi.errors import RateLimitExceeded
 from app.core.rate_limit import limiter
 
 description = """
-**TokoAI Commerce Agent API**
+**TokoAI Commerce Agent API (Cambodia Edition v2.0)**
 
-This is the core backend engine powering TokoAI, a multi-tenant AI commerce platform.
+Core backend engine powering TokoAI, an autonomous multi-tenant AI conversational commerce SaaS platform.
 
 ### Core Capabilities:
-* **AI Auto-Pilot**: Automated customer support using Gemini and PostgreSQL pgvector.
-* **TikTok Shop**: Webhook integration for real-time customer messaging.
-* **Bakong KHQR**: Dynamic QR code generation for instant fiat and cryptocurrency payments.
-* **Multi-Tenant Architecture**: Secure isolation of shops, products, and analytics for every seller.
+* **Historical Persona Cloning**: Clones shop owner's authentic spoken Khmer sales habits, first-message hooks, and objection tactics.
+* **Multimodal Voice AI**: Transcribes Khmer/Khmeringlish voice notes and supports cloned voice responses.
+* **Cultural Bargaining Engine**: 3-tier negotiation protocol defending price and executing counter-offers without breaching floors.
+* **Predictive BI & AI Consultant**: Real-time SKU velocity, stockout forecasts (<5 days), automated COGS P&L, and executive AI business advising.
+* **High-Concurrency Anti-Crash**: Redis 2.5s sliding window message debouncing and atomic PostgreSQL row locks.
 """
 
 app = FastAPI(
     title="TokoAI Commerce Agent",
     description=description,
-    version="1.0.0",
+    version="2.0.0",
     contact={
         "name": "TokoAI Engineering Team",
         "email": "admin@tokoai.com",
@@ -62,14 +65,16 @@ app.include_router(admin_router, prefix="/api/v1/admin", tags=["Platform Admin"]
 app.include_router(tiktok_router, prefix="/api/v1")
 app.include_router(bakong_router, prefix="/api/v1")
 app.include_router(products_router, prefix="/api/v1")
-app.include_router(seller_router, prefix="/api/v1/seller", tags=["Seller Shops"])
+app.include_router(seller_router, prefix="/api/v1/seller", tags=["Seller Shops & Persona"])
 app.include_router(settings_router, prefix="/api/v1/seller/settings", tags=["Seller Settings"])
 app.include_router(faqs_router, prefix="/api/v1/seller/faqs", tags=["Seller FAQs"])
 app.include_router(inbox_router, prefix="/api/v1/seller/inbox", tags=["Seller Inbox"])
-app.include_router(analytics_router, prefix="/api/v1/seller/analytics", tags=["Seller Analytics"])
+app.include_router(analytics_router, prefix="/api/v1/seller/analytics", tags=["Seller Analytics & BI"])
 app.include_router(customers_router, prefix="/api/v1")
 app.include_router(orders_router, prefix="/api/v1/orders", tags=["Order Management"])
+app.include_router(social_comments_router, prefix="/api/v1")
+app.include_router(consultant_router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "2.0.0"}

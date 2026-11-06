@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { 
   UploadCloud, FileText, Trash2, Bot, Plus, Sparkles, CheckCircle2, 
-  Layers, HelpCircle, PlusCircle, Search, Edit3, X, ArrowRight, Package
+  Layers, HelpCircle, PlusCircle, Search, Edit3, X, ArrowRight, Package,
+  AlertTriangle, DollarSign, Tag, TrendingDown
 } from "lucide-react";
 import { Button, Input, Card, Badge, Modal } from "@/components/ui/design-system";
 import api from "@/lib/api";
@@ -24,9 +25,11 @@ export default function KnowledgeBasePage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [manualName, setManualName] = useState("");
   const [manualNameKh, setManualNameKh] = useState("");
-  const [manualPrice, setManualPrice] = useState("15.00");
-  const [manualStock, setManualStock] = useState("25");
-  const [manualCategory, setManualCategory] = useState("Clothing");
+  const [manualPrice, setManualPrice] = useState("18.00");
+  const [manualMinBargain, setManualMinBargain] = useState("15.00");
+  const [manualCostPrice, setManualCostPrice] = useState("10.00");
+  const [manualStock, setManualStock] = useState("30");
+  const [manualCategory, setManualCategory] = useState("Streetwear");
   const [manualSku, setManualSku] = useState("");
   const [manualDesc, setManualDesc] = useState("");
   const [manualVariants, setManualVariants] = useState("S: 10, M: 25, L: 0, XL: 15");
@@ -91,16 +94,15 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  // Manual Product Creation
   const handleCreateManualProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualName.trim() || !manualPrice) {
       toast.warning("Please provide product name and price");
       return;
     }
+
     setIsSavingManual(true);
     try {
-      // Parse manualVariants e.g. "S: 10, M: 25, L: 0, XL: 15"
       const parsedVariants = manualVariants
         .split(',')
         .map(item => {
@@ -117,21 +119,25 @@ export default function KnowledgeBasePage() {
         name_kh: manualNameKh || undefined,
         category: manualCategory,
         price: parseFloat(manualPrice) || 0.0,
+        min_negotiation_price: parseFloat(manualMinBargain) || parseFloat(manualPrice) || 0.0,
+        cost_price_usd: parseFloat(manualCostPrice) || (parseFloat(manualPrice) * 0.55),
+        reorder_threshold: 10,
         stock: parseInt(manualStock, 10) || 0,
         sku: manualSku || undefined,
         description: manualDesc || "Authentic quality merchandise.",
         variants: parsedVariants
       });
-      toast.success(`"${manualName}" added with size variants! AI embeddings synced.`);
+      toast.success(`"${manualName}" added with bargain floor! AI embeddings synced.`);
       setIsAddModalOpen(false);
-      // Reset form
+      
       setManualName("");
       setManualNameKh("");
-      setManualPrice("15.00");
-      setManualStock("25");
+      setManualPrice("18.00");
+      setManualMinBargain("15.00");
+      setManualCostPrice("10.00");
+      setManualStock("30");
       setManualSku("");
       setManualDesc("");
-      setManualVariants("S: 10, M: 25, L: 0, XL: 15");
       fetchProducts();
     } catch (e: any) {
       toast.error(e.response?.data?.detail || "Failed to create product");
@@ -140,7 +146,6 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  // Inline Stock Adjustment (+1 or -1)
   const handleAdjustStock = async (product: any, delta: number) => {
     const newStock = Math.max(0, product.stock + delta);
     try {
@@ -152,7 +157,6 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  // Delete Product
   const handleDeleteProduct = async (productId: string, productName: string) => {
     try {
       await api.delete(`/products/${productId}`);
@@ -163,7 +167,6 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  // FAQs
   const handleAddFaq = async () => {
     if (!newQuestion.trim() || !newAnswer.trim()) {
       toast.warning("Please provide both rule question and answer");
@@ -198,75 +201,71 @@ export default function KnowledgeBasePage() {
     (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const filteredFaqs = faqs.filter(f =>
+  const filteredFaqs = faqs.filter(f => 
     f.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl pb-16">
+    <div className="space-y-6 animate-in fade-in duration-300 pb-12">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      {/* Header with Title and Mode Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A]">
-              Product Catalog &amp; Store Rules
-            </h1>
-            <Badge variant="brand" className="text-[10px]">768d pgvector</Badge>
-          </div>
-          <p className="text-xs md:text-sm text-slate-500 mt-1">
-            Multimodal vision ingestion and Khmer conversational FAQ rules bounded strictly to your shop.
+          <h1 className="text-xl md:text-2xl font-black text-[#0F172A] tracking-tight flex items-center gap-2">
+            AI Brain &amp; Knowledge Base
+            <span className="text-xs bg-blue-50 text-[#1B38A6] font-bold px-2 py-0.5 rounded-full border border-blue-200">
+              pgvector 768d
+            </span>
+          </h1>
+          <p className="text-xs text-slate-500 font-medium">
+            Manage product catalog, bargaining price floors, stock levels, and custom conversational rules.
           </p>
         </div>
 
-        {activeTab === 'products' && (
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="secondary"
-              className="h-9 text-xs gap-1.5 shadow-xs"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <PlusCircle size={14} className="text-[#1B38A6]" /> Add Manually
-            </Button>
+        <div className="flex items-center gap-2">
+          {activeTab === 'products' && (
             <Button 
               variant="brand" 
-              className="h-9 text-xs gap-1.5 shadow-sm"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setIsAddModalOpen(true)}
+              className="text-xs font-bold gap-1.5 h-9 rounded-xl"
             >
-              <UploadCloud size={14} /> Upload Photo
+              <Plus size={14} /> Add Product Manually
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Tab Switcher & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-2">
-        <div className="flex items-center space-x-6">
-          <button 
-            onClick={() => setActiveTab('products')} 
-            className={`text-xs font-bold pb-2 -mb-px border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'products' 
-                ? 'border-[#1B38A6] text-[#0F172A]' 
-                : 'border-transparent text-slate-400 hover:text-slate-700'
+      {/* Tabs */}
+      <div className="flex items-center justify-between border-b border-slate-200 pb-px">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 border-b-2 ${
+              activeTab === 'products'
+                ? 'border-[#1B38A6] text-[#1B38A6] bg-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Layers size={14} /> Product Catalog ({products.length})
+            <Package size={14} />
+            <span>Product Catalog ({products.length})</span>
           </button>
-          <button 
-            onClick={() => setActiveTab('faqs')} 
-            className={`text-xs font-bold pb-2 -mb-px border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'faqs' 
-                ? 'border-[#1B38A6] text-[#0F172A]' 
-                : 'border-transparent text-slate-400 hover:text-slate-700'
+
+          <button
+            onClick={() => setActiveTab('faqs')}
+            className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 border-b-2 ${
+              activeTab === 'faqs'
+                ? 'border-[#1B38A6] text-[#1B38A6] bg-white'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <HelpCircle size={14} /> Conversational Rules &amp; FAQs ({faqs.length})
+            <HelpCircle size={14} />
+            <span>Store Rules &amp; FAQs ({faqs.length})</span>
           </button>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+        <div className="relative w-64 hidden sm:block">
+          <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
           <Input 
             placeholder={activeTab === 'products' ? "Search SKU or name..." : "Search QA rules..."}
             value={searchQuery}
@@ -337,13 +336,19 @@ export default function KnowledgeBasePage() {
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
               {filteredProducts.map(p => (
                 <Card key={p.id} className="relative overflow-hidden group border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm transition-all rounded-2xl flex flex-col justify-between">
-                  {p.stock === 0 && (
+                  {p.stock === 0 ? (
                     <div className="absolute top-2 left-2 z-10">
                       <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-rose-500 text-white shadow-xs">
                         Out of Stock
                       </span>
                     </div>
-                  )}
+                  ) : p.stock <= 5 ? (
+                    <div className="absolute top-2 left-2 z-10">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-amber-500 text-white shadow-xs animate-pulse">
+                        ⚠️ Critical Restock
+                      </span>
+                    </div>
+                  ) : null}
 
                   <div>
                     <div className="h-36 bg-slate-50 flex items-center justify-center overflow-hidden border-b border-slate-100 relative">
@@ -358,7 +363,6 @@ export default function KnowledgeBasePage() {
                         <span className="text-3xl opacity-40">🛍️</span>
                       )}
                       
-                      {/* Delete button */}
                       <button
                         onClick={() => handleDeleteProduct(p.id, p.name)}
                         className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-slate-400 hover:text-rose-600 hover:bg-white shadow-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -369,7 +373,7 @@ export default function KnowledgeBasePage() {
                     </div>
 
                     <div className="p-3.5 space-y-1">
-                      <p className="text-xs font-bold text-[#0F172A] truncate" title={p.name}>
+                      <p className="text-xs font-bold text-[#0F172A] truncate font-khmer" title={p.name}>
                         {p.name_kh || p.name}
                       </p>
                       {p.sku && <p className="text-[10px] font-mono text-slate-400">{p.sku}</p>}
@@ -380,7 +384,19 @@ export default function KnowledgeBasePage() {
                         </span>
                       </div>
 
-                      {/* Product Variant Pills (Sizes / Colors & Real-Time Stock) */}
+                      {/* Cultural Bargaining Floor & COGS attribution */}
+                      <div className="flex items-center justify-between text-[10px] pt-1">
+                        <span className="text-amber-700 font-bold bg-amber-50 px-1.5 py-0.2 rounded-sm border border-amber-200">
+                          Floor: ${Number(p.min_negotiation_price || p.price).toFixed(2)}
+                        </span>
+                        {p.cost_price_usd > 0 && (
+                          <span className="text-slate-400 font-medium">
+                            COGS: ${Number(p.cost_price_usd).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Product Variant Pills */}
                       {p.variants && Array.isArray(p.variants) && p.variants.length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-2">
                           {p.variants.map((v: any, idx: number) => {
@@ -443,7 +459,7 @@ export default function KnowledgeBasePage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-extrabold text-[#0F172A]">Add Product to Catalog</h3>
-                <p className="text-xs text-slate-500">Vector embeddings will be generated automatically for RAG.</p>
+                <p className="text-xs text-slate-500">Configure retail pricing, bargaining floor, and vector embeddings.</p>
               </div>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={18} />
@@ -455,7 +471,7 @@ export default function KnowledgeBasePage() {
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700">Product Name (English) *</label>
                   <Input 
-                    placeholder="e.g. Vintage Denim Jacket" 
+                    placeholder="e.g. Vintage Acid Wash Tee" 
                     value={manualName}
                     onChange={(e: any) => setManualName(e.target.value)}
                     required
@@ -463,9 +479,9 @@ export default function KnowledgeBasePage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Product Name (Khmer)</label>
+                  <label className="text-xs font-bold text-slate-700 font-khmer">ឈ្មោះជាភាសាខ្មែរ (Khmer)</label>
                   <Input 
-                    placeholder="e.g. អាវខូវប៊យម៉ូតចាស់" 
+                    placeholder="e.g. អាវយឺត Vintage ពេញនិយម" 
                     value={manualNameKh}
                     onChange={(e: any) => setManualNameKh(e.target.value)}
                     className="text-xs bg-slate-50 border-slate-200 h-9 font-khmer"
@@ -475,35 +491,57 @@ export default function KnowledgeBasePage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700">Price (USD) *</label>
+                  <label className="text-xs font-bold text-slate-700">Retail Price ($) *</label>
                   <Input 
                     type="number"
                     step="0.01"
-                    placeholder="25.00" 
+                    placeholder="18.00" 
                     value={manualPrice}
                     onChange={(e: any) => setManualPrice(e.target.value)}
                     required
+                    className="text-xs bg-slate-50 border-slate-200 h-9 font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-amber-700">Min Bargain Floor ($)</label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    placeholder="15.00" 
+                    value={manualMinBargain}
+                    onChange={(e: any) => setManualMinBargain(e.target.value)}
+                    className="text-xs bg-amber-50/50 border-amber-200 text-amber-800 font-bold h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Cost Price COGS ($)</label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    placeholder="10.00" 
+                    value={manualCostPrice}
+                    onChange={(e: any) => setManualCostPrice(e.target.value)}
                     className="text-xs bg-slate-50 border-slate-200 h-9"
                   />
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    ≈ {(parseFloat(manualPrice || "0") * 4100).toLocaleString()} ៛
-                  </span>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700">Stock Units *</label>
                   <Input 
                     type="number"
-                    placeholder="50" 
+                    placeholder="30" 
                     value={manualStock}
                     onChange={(e: any) => setManualStock(e.target.value)}
                     required
-                    className="text-xs bg-slate-50 border-slate-200 h-9"
+                    className="text-xs bg-slate-50 border-slate-200 h-9 font-bold"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700">Category</label>
                   <Input 
-                    placeholder="Clothing" 
+                    placeholder="Streetwear" 
                     value={manualCategory}
                     onChange={(e: any) => setManualCategory(e.target.value)}
                     className="text-xs bg-slate-50 border-slate-200 h-9"
@@ -514,7 +552,7 @@ export default function KnowledgeBasePage() {
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">Custom SKU Code (Optional)</label>
                 <Input 
-                  placeholder="e.g. JKT-DENIM-01" 
+                  placeholder="e.g. TEE-ACID-01" 
                   value={manualSku}
                   onChange={(e: any) => setManualSku(e.target.value)}
                   className="text-xs bg-slate-50 border-slate-200 h-9 font-mono"
@@ -524,7 +562,7 @@ export default function KnowledgeBasePage() {
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">Description / Highlights</label>
                 <Input 
-                  placeholder="Key details (fabric, sizing, available colors)" 
+                  placeholder="Key details (fabric quality, size chart, guarantee)" 
                   value={manualDesc}
                   onChange={(e: any) => setManualDesc(e.target.value)}
                   className="text-xs bg-slate-50 border-slate-200 h-9"
@@ -583,18 +621,18 @@ export default function KnowledgeBasePage() {
                 <label className="font-bold text-slate-700">Price (USD)</label>
                 <Input 
                   type="number" 
-                  value={draftProduct.price || 12.00} 
+                  value={draftProduct.price || 18.00} 
                   onChange={(e: any) => setDraftProduct({...draftProduct, price: parseFloat(e.target.value)})} 
-                  className="text-xs"
+                  className="text-xs font-bold"
                 />
               </div>
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Initial Stock</label>
+                <label className="font-bold text-amber-700">Min Bargain Floor (USD)</label>
                 <Input 
                   type="number" 
-                  value={draftProduct.stock || 20} 
-                  onChange={(e: any) => setDraftProduct({...draftProduct, stock: parseInt(e.target.value, 10)})} 
-                  className="text-xs"
+                  value={draftProduct.min_negotiation_price || 15.00} 
+                  onChange={(e: any) => setDraftProduct({...draftProduct, min_negotiation_price: parseFloat(e.target.value)})} 
+                  className="text-xs text-amber-800 font-bold bg-amber-50"
                 />
               </div>
             </div>
@@ -631,7 +669,7 @@ export default function KnowledgeBasePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">When buyer asks (Question)...</label>
+                <label className="text-xs font-bold text-slate-700 font-khmer">When buyer asks (Question)...</label>
                 <Input 
                   placeholder="e.g. តើមានសេវាដឹកទៅខេត្តកំពតទេ?" 
                   value={newQuestion}
@@ -640,7 +678,7 @@ export default function KnowledgeBasePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">AI should answer (Policy)...</label>
+                <label className="text-xs font-bold text-slate-700 font-khmer">AI should answer (Policy)...</label>
                 <Input 
                   placeholder="e.g. ខាងអូនមានសេវាដឹកទៅកំពតតាម Virak Buntham ថ្លៃ $2.50 ចា៎" 
                   value={newAnswer}

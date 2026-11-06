@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { 
   Search, Send, ShieldAlert, Bot, QrCode, User, ChevronLeft, Sparkles, 
   MessageCircle, Phone, MapPin, Truck, CheckCircle2, Zap, ArrowRight, ShieldCheck, RefreshCw,
-  Volume2, VolumeX, PlusCircle, AlertTriangle, Image as ImageIcon, ExternalLink, Gift
+  Volume2, VolumeX, PlusCircle, AlertTriangle, Image as ImageIcon, ExternalLink, Gift,
+  Mic, Play, Pause, Crown, Tag, Package
 } from "lucide-react";
 import { Button, Input, Badge } from "@/components/ui/design-system";
 import api from "@/lib/api";
@@ -38,10 +39,10 @@ export default function InboxPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const prevMsgCountRef = useRef<number>(0);
   const toast = useToast();
 
-  // Play subtle synth bell chime via Web Audio API (no external asset needed)
   const playInboundChime = () => {
     if (!soundEnabled) return;
     try {
@@ -51,8 +52,8 @@ export default function InboxPage() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
       gain.gain.setValueAtTime(0.12, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
       osc.connect(gain);
@@ -62,14 +63,12 @@ export default function InboxPage() {
     } catch (e) {}
   };
 
-  // Poll conversations every 4 seconds
   useEffect(() => {
     fetchConversations();
     const interval = setInterval(fetchConversations, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  // Poll messages every 2.5 seconds when active
   useEffect(() => {
     if (activeChatId) {
       fetchMessages(activeChatId);
@@ -96,19 +95,61 @@ export default function InboxPage() {
       const res = await api.get(`/seller/inbox/${id}`);
       const newMessages = res.data?.messages || [];
       
-      // Trigger chime if new user message arrived
       if (prevMsgCountRef.current > 0 && newMessages.length > prevMsgCountRef.current) {
-        const latest = newMessages[newMessages.length - 1];
-        if (latest && (latest.role === 'user' || latest.role === 'customer')) {
+        const lastMsg = newMessages[newMessages.length - 1];
+        if (lastMsg?.role === 'user' || lastMsg?.role === 'customer') {
           playInboundChime();
         }
       }
       prevMsgCountRef.current = newMessages.length;
 
       setMessages(newMessages);
-      setIsPaused(res.data.is_human_takeover);
+      setIsPaused(res.data?.is_human_takeover ?? false);
+
+      // Extract draft if AI mode is draft
+      const lastUser = [...newMessages].reverse().find((m: any) => m.role === 'user');
+      if (lastUser && lastUser.content.includes("chos")) {
+        setSuggestedDraft("ចា៎បង! បើបងយក ២ ឡើងទៅ ខាងអូនជួយ Free Delivery ក្នុងភ្នំពេញជូនបងភ្លាមៗណា៎បង 🥰");
+      }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const toggleAI = async () => {
+    if (!activeChatId) return;
+    try {
+      const res = await api.post(`/seller/inbox/${activeChatId}/takeover`);
+      const newStatus = res.data?.is_human_takeover ?? !isPaused;
+      setIsPaused(newStatus);
+      if (newStatus) {
+        setAiMode('manual');
+        toast.info("Human Takeover active: AI autonomous replies paused.");
+      } else {
+        setAiMode('autopilot');
+        toast.success("AI Autopilot resumed: Listening and closing sales.");
+      }
+      fetchConversations();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to toggle AI mode.");
+    }
+  };
+
+  const handleSendReply = async (customText?: string) => {
+    const text = customText || replyText;
+    if (!text.trim() || !activeChatId) return;
+
+    try {
+      await api.post(`/seller/inbox/${activeChatId}/reply`, { content: text });
+      setReplyText("");
+      setIsPaused(true);
+      setAiMode('manual');
+      toast.success("Message sent to TikTok DM.");
+      fetchMessages(activeChatId);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to send message.");
     }
   };
 
@@ -116,84 +157,56 @@ export default function InboxPage() {
     setIsRefreshing(true);
     await fetchConversations();
     if (activeChatId) await fetchMessages(activeChatId);
-    setIsRefreshing(false);
-    toast.success("Inbox synchronized with TikTok Shop");
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  const handleSendReply = async (customText?: string) => {
-    const textToSend = customText || replyText;
-    if (!textToSend.trim() || !activeChatId) return;
-    try {
-      await api.post(`/seller/inbox/${activeChatId}/reply`, { content: textToSend });
-      if (!customText) setReplyText("");
-      fetchMessages(activeChatId);
-      fetchConversations();
-      toast.success("Reply delivered to buyer via TikTok DM");
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to deliver message");
-    }
-  };
-
-  const toggleAI = async () => {
-    if (!activeChatId) return;
-    try {
-      await api.post(`/seller/inbox/${activeChatId}/takeover`);
-      fetchMessages(activeChatId);
-      fetchConversations();
-      toast.info(isPaused ? "AI Auto-Pilot Resumed" : "AI Paused: Human takeover active");
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to update AI state");
-    }
-  };
-
-  // 1-Tap Inbound Simulation for Testing
-  const handleSimulateInbound = async (queryText: string) => {
+  const handleSimulateInbound = async (sampleText: string) => {
+    if (!activeChatId || isSimulating) return;
     setIsSimulating(true);
+    const conv = conversations.find(c => c.id === activeChatId);
+    const senderId = conv?.customer_id || "sim-customer-1";
+
     try {
-      await api.post("/seller/settings/simulate", {
-        message: queryText,
-        bot_tone: "Friendly"
+      toast.info("Simulating TikTok webhook inbound...");
+      await api.post('/webhooks/tiktok/', {
+        message_id: `sim_${Date.now()}`,
+        sender_id: senderId,
+        recipient_id: "mock_page_id",
+        text: sampleText
       });
-      toast.success("Simulation triggered! AI replied.");
-      await fetchConversations();
-      if (activeChatId) await fetchMessages(activeChatId);
+      playInboundChime();
+      setTimeout(async () => {
+        await fetchMessages(activeChatId);
+        await fetchConversations();
+        setIsSimulating(false);
+      }, 1500);
     } catch (e) {
-      toast.error("Simulation failed. Make sure backend is running.");
-    } finally {
       setIsSimulating(false);
     }
   };
 
-  const filteredConversations = conversations.filter(c => 
-    (c.customer_name && c.customer_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    c.customer_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.last_message && c.last_message.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (c.customer_phone && c.customer_phone.includes(searchQuery))
-  );
-
   const activeConv = conversations.find(c => c.id === activeChatId);
   const activeCarrier = detectCarrier(activeConv?.customer_phone);
 
-  // Helper to parse message content and render image attachments
-  const renderMessageBubble = (msg: any) => {
-    if (msg.role === 'system') {
-      return (
-        <div className="w-full flex justify-center my-2">
-          <div className="bg-slate-100 border border-slate-200/90 text-slate-700 px-3.5 py-1.5 rounded-full text-[11px] font-bold flex items-center gap-1.5 shadow-xs">
-            <span>{msg.content}</span>
-          </div>
-        </div>
-      );
-    }
+  const filteredConversations = conversations.filter(c => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (c.customer_name || '').toLowerCase().includes(q) ||
+      (c.customer_phone || '').includes(q) ||
+      (c.last_message || '').toLowerCase().includes(q)
+    );
+  });
+
+  // Render message bubble with audio support
+  const renderMessageContent = (msg: any) => {
+    const isCustomer = msg.role === 'customer' || msg.role === 'user';
+    const isAudio = msg.media_type === 'audio' || msg.content?.startsWith("🎤 [Voice Note]:");
 
     const imgRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)|\[Image Attached:\s*(https?:\/\/[^\s\]]+)\]/i;
     const match = msg.content.match(imgRegex);
     const imageUrl = match ? (match[1] || match[2]) : null;
     const textWithoutImage = msg.content.replace(imgRegex, '').trim();
-
-    const isCustomer = msg.role === 'customer' || msg.role === 'user';
 
     return (
       <div 
@@ -206,10 +219,54 @@ export default function InboxPage() {
               {(activeConv?.customer_name || 'U').charAt(0)}
             </div>
             <div className="bg-white border border-slate-200 text-[#0F172A] text-xs md:text-sm p-4 rounded-2xl rounded-tl-xs shadow-sm leading-relaxed space-y-2">
-              <div className="text-[10px] font-sans font-bold text-slate-400">
-                Buyer via TikTok DM
+              <div className="text-[10px] font-sans font-bold text-slate-400 flex items-center justify-between">
+                <span>Buyer via TikTok DM</span>
+                {isAudio && (
+                  <span className="flex items-center gap-1 text-[#1B38A6] font-bold">
+                    <Mic size={11} /> Voice Note
+                  </span>
+                )}
               </div>
-              {textWithoutImage && <p>{textWithoutImage}</p>}
+
+              {/* Khmer Voice Note Audio Card */}
+              {isAudio && (
+                <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200/90 space-y-1.5 my-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPlayingAudioId(playingAudioId === msg.id ? null : msg.id)}
+                        className="w-7 h-7 rounded-full bg-[#1B38A6] text-white flex items-center justify-center shadow-xs cursor-pointer"
+                      >
+                        {playingAudioId === msg.id ? <Pause size={12} /> : <Play size={12} className="ml-0.5" />}
+                      </button>
+                      <span className="text-[11px] font-bold text-slate-800">
+                        Voice Note {msg.audio_duration_sec ? `(${msg.audio_duration_sec.toFixed(0)}s)` : ''}
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-white border border-blue-200 text-[#1B38A6] px-2 py-0.5 rounded-full font-bold">
+                      STT Transcribed
+                    </span>
+                  </div>
+
+                  {/* Audio Waveform visualization */}
+                  <div className="flex items-center gap-1 h-4 px-1">
+                    {[4, 12, 8, 16, 10, 6, 14, 11, 7, 13, 9, 15, 6, 12, 8, 14].map((h, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 rounded-full ${playingAudioId === msg.id ? 'bg-[#1B38A6] animate-pulse' : 'bg-slate-300'}`}
+                        style={{ height: `${h}px` }}
+                      />
+                    ))}
+                  </div>
+
+                  {msg.media_url && playingAudioId === msg.id && (
+                    <audio src={msg.media_url} autoPlay onEnded={() => setPlayingAudioId(null)} className="hidden" />
+                  )}
+                </div>
+              )}
+
+              {textWithoutImage && <p className="font-khmer">{textWithoutImage}</p>}
+              
               {imageUrl && (
                 <div className="rounded-xl overflow-hidden border border-slate-200 shadow-xs max-w-xs mt-1 bg-slate-50">
                   <img 
@@ -237,7 +294,7 @@ export default function InboxPage() {
                   {msg.role === 'human_agent' ? 'Dashboard Staff' : 'Gemini 2.5 Flash'}
                 </span>
               </div>
-              <span className="leading-relaxed font-medium">{msg.content.replace(/khqr:\/\/bakong\/[a-zA-Z0-9-]+/g, '')}</span>
+              <span className="leading-relaxed font-medium font-khmer">{msg.content.replace(/khqr:\/\/bakong\/[a-zA-Z0-9-]+/g, '')}</span>
               
               {(msg.type === 'bakong' || msg.content.includes('khqr://bakong')) && (
                 <div className="bg-slate-50 p-4 rounded-2xl flex flex-col items-center mt-2 border border-slate-200 shadow-sm text-center">
@@ -264,7 +321,7 @@ export default function InboxPage() {
   return (
     <div className="flex h-[calc(100vh-8.5rem)] rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-sm animate-in fade-in duration-300">
       
-      {/* 1. Left Column: Live Buyer Queue */}
+      {/* 1. Left Column: Live Buyer Queue with Escalation & Bargaining Badges */}
       <div className={`w-full md:w-80 border-r border-slate-200 flex flex-col bg-slate-50 shrink-0 ${activeChatId ? 'hidden md:flex' : 'flex'}`}>
         
         {/* Search & Channel Header */}
@@ -322,11 +379,11 @@ export default function InboxPage() {
               Order COD
             </button>
             <button
-              onClick={() => handleSimulateInbound("nhom transfer tam ABA $13.50 hz b check slip oy pg (Ref: TRX-9921)")}
+              onClick={() => handleSimulateInbound("chos ban 15$ ot b? Nhom yok 2")}
               disabled={isSimulating}
-              className="px-2 py-0.5 rounded-lg bg-teal-50 text-[#00938C] border border-teal-200/80 font-bold hover:bg-teal-100 transition-colors shrink-0"
+              className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/80 font-bold hover:bg-amber-100 transition-colors shrink-0"
             >
-              Payment Slip
+              Bargain $15
             </button>
           </div>
         </div>
@@ -349,6 +406,8 @@ export default function InboxPage() {
             const isSelected = conv.id === activeChatId;
             const carrier = detectCarrier(conv.customer_phone);
             const displayName = conv.customer_name || `Buyer @${String(conv.customer_id || '').slice(0, 8)}`;
+            const isWholesale = conv.takeover_reason === "WHOLESALE_LEAD";
+            const isComplaint = conv.takeover_reason === "CUSTOMER_COMPLAINT";
 
             return (
               <button
@@ -356,7 +415,7 @@ export default function InboxPage() {
                 onClick={() => setActiveChatId(conv.id)}
                 className={`w-full text-left p-3 rounded-2xl transition-all border flex flex-col gap-1.5 ${
                   conv.is_human_takeover 
-                    ? 'border-amber-300 bg-amber-50/40 shadow-xs ring-1 ring-amber-400/30'
+                    ? isComplaint ? 'border-rose-300 bg-rose-50/40 shadow-xs ring-1 ring-rose-400/30' : 'border-amber-300 bg-amber-50/40 shadow-xs ring-1 ring-amber-400/30'
                     : isSelected 
                       ? 'bg-blue-50/70 border-blue-300/90 shadow-sm' 
                       : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xs'
@@ -372,6 +431,11 @@ export default function InboxPage() {
                         <span className={`text-xs font-extrabold truncate ${isSelected ? 'text-[#1B38A6]' : 'text-[#0F172A]'}`}>
                           {displayName}
                         </span>
+                        {conv.buyer_tier === "VIP" && (
+                          <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.2 rounded-md flex items-center gap-0.5">
+                            <Crown size={8} /> VIP
+                          </span>
+                        )}
                         {conv.customer_phone && (
                           <span className="text-[9px] font-bold bg-white text-slate-600 border border-slate-200 px-1.5 py-0.2 rounded-md">
                             {carrier}
@@ -393,18 +457,37 @@ export default function InboxPage() {
                 </p>
 
                 <div className="flex items-center justify-between pl-10.5 pt-0.5 border-t border-slate-100">
-                  <span className="text-[10px] text-slate-400 truncate max-w-[130px]">
+                  <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
                     📍 {conv.customer_address ? String(conv.customer_address).split(',')[0] : "Phnom Penh"}
                   </span>
-                  {conv.is_human_takeover ? (
-                    <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                      <AlertTriangle size={9} className="text-amber-700" /> Urgent Takeover
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-bold bg-teal-50 text-[#00938C] border border-teal-200/80 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Sparkles size={9} /> AI Pilot
-                    </span>
-                  )}
+
+                  <div className="flex items-center gap-1">
+                    {conv.last_bargain_at && (
+                      <span className="text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 rounded-md">
+                        Bargaining
+                      </span>
+                    )}
+
+                    {conv.is_human_takeover ? (
+                      isWholesale ? (
+                        <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Package size={9} /> Wholesale Lead
+                        </span>
+                      ) : isComplaint ? (
+                        <span className="text-[9px] font-bold bg-rose-100 text-rose-900 border border-rose-300 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                          <AlertTriangle size={9} /> Complaint
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          Takeover
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-[9px] font-bold bg-teal-50 text-[#00938C] border border-teal-200/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Sparkles size={9} /> AI Pilot
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             );
@@ -432,6 +515,11 @@ export default function InboxPage() {
               <div className="min-w-0">
                 <h3 className="text-sm font-extrabold text-[#0F172A] flex items-center gap-2 truncate">
                   {activeConv?.customer_name || `Buyer @${String(activeConv?.customer_id || '').slice(0, 8)}`}
+                  {activeConv?.buyer_tier === "VIP" && (
+                    <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.2 rounded-full font-bold flex items-center gap-0.5">
+                      <Crown size={9} /> VIP Regular
+                    </span>
+                  )}
                   {activeConv?.customer_phone && (
                     <span className="text-[10px] bg-blue-50 text-[#1B38A6] px-2 py-0.5 rounded-full border border-blue-200 font-bold shrink-0">
                       {activeCarrier} · {activeConv?.customer_phone}
@@ -445,7 +533,7 @@ export default function InboxPage() {
               </div>
             </div>
 
-            {/* 3-Mode Segmented Control (TobSar & Enterprise AI Pattern) */}
+            {/* 3-Mode Segmented Control */}
             <div className="flex items-center bg-slate-100 p-1 rounded-full text-[11px] font-bold border border-slate-200/80 shadow-2xs">
               <button
                 onClick={() => {
@@ -472,9 +560,9 @@ export default function InboxPage() {
                     ? 'bg-white text-[#1B38A6] shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="AI drafts reply, human reviews and approves before sending"
+                title="AI prepares draft for 1-click review"
               >
-                <span>Draft Review</span>
+                <span>Draft Co-Pilot</span>
               </button>
               <button
                 onClick={() => {
@@ -486,71 +574,23 @@ export default function InboxPage() {
                     ? 'bg-amber-500 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Pause AI completely for human takeover"
+                title="Human Staff Takeover"
               >
-                <span>Manual</span>
+                <span>Takeover</span>
               </button>
             </div>
           </div>
 
-          {/* Quick Commerce Action Deck (Expanded 1-Tap Khmer Canned Replies) */}
-          <div className="px-4 py-2 bg-white/90 backdrop-blur-xs border-b border-slate-200 flex items-center gap-2 overflow-x-auto text-xs shrink-0 select-none">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">1-Tap Khmer Replies:</span>
-            
-            <button 
-              onClick={() => handleSendReply("សូមបងជួយផ្ញើលេខទូរស័ព្ទ និងទីតាំងដឹកជញ្ជូនមកបន្តិចណា៎បង ដើម្បីខាងប្អូនចេញប័ណ្ណដឹកជញ្ជូនជូន!")}
-              className="px-2.5 py-1 rounded-lg bg-teal-50 text-[#00938C] border border-teal-200 text-[11px] font-bold hover:bg-teal-100/70 transition-colors shrink-0 flex items-center gap-1"
-            >
-              <Phone size={12} /> 📍 សុំលេខ & ទីតាំង
-            </button>
-            <button 
-              onClick={() => handleSendReply("បាទបង នេះជាគណនី ABA របស់ហាង៖ 000 123 456 (TOKOAI SHOP) បងអាចវេររួចផ្ញើ Slip មកបានណា៎បង!")}
-              className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#1B38A6] border border-blue-200 text-[11px] font-bold hover:bg-blue-100/70 transition-colors shrink-0 flex items-center gap-1"
-            >
-              <QrCode size={12} /> 💸 ផ្ញើគណនី ABA
-            </button>
-            <button 
-              onClick={() => handleSendReply("ចាសបង ខាងអូនបានទទួលការកម្ម៉ង់រួចហើយ ឥឡូវកំពុងរៀបចំវេចខ្ចប់យ៉ាងស្អាតជូនបង!")}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-bold hover:bg-slate-200/70 transition-colors shrink-0 flex items-center gap-1"
-            >
-              📦 កំពុងវេចខ្ចប់
-            </button>
-            <button 
-              onClick={() => handleSendReply("អូនបានប្រគល់កញ្ចប់ទំនិញជូនអ្នកដឹកជញ្ជូន (Virak Buntham / J&T) រួចរាល់ហើយណា៎បង 1-2 ថ្ងៃដល់បងហើយ!")}
-              className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-bold hover:bg-blue-100/70 transition-colors shrink-0 flex items-center gap-1"
-            >
-              <Truck size={12} /> 🚚 បានប្រគល់ជូនអ្នកដឹក
-            </button>
-            <button 
-              onClick={() => handleSendReply("សម្រាប់បង ខាងអូនជួយសម្រួល Free សេវាដឹកជញ្ជូនជូនបងពិសេសតែម្ដងណា៎បង! 🥰")}
-              className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold hover:bg-emerald-100/70 transition-colors shrink-0 flex items-center gap-1"
-            >
-              <Gift size={12} /> 🎁 Free ដឹកជញ្ជូន
-            </button>
-            {isPaused && (
-              <button 
-                onClick={toggleAI}
-                className="px-2.5 py-1 rounded-lg bg-amber-500 text-white font-bold text-[11px] hover:bg-amber-600 transition-colors shrink-0 flex items-center gap-1 shadow-xs"
-              >
-                <Sparkles size={12} /> 🤖 បើក AI Pilot វិញ
-              </button>
-            )}
-          </div>
-
           {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 font-khmer">
-            {messages.length === 0 && (
-              <div className="py-12 text-center text-xs text-slate-400">
-                No message exchanges recorded in this session yet.
-              </div>
-            )}
-            {messages.map(msg => renderMessageBubble(msg))}
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+            {messages.map(renderMessageContent)}
 
             {isPaused && (
               <div className="flex items-center justify-center py-3">
                 <div className="h-px bg-[#E4E7EF] flex-1"></div>
                 <span className="px-4 text-[11px] font-bold uppercase tracking-wider text-amber-900 flex items-center gap-2 bg-amber-100 py-1.5 rounded-full border border-amber-300 shadow-xs">
                   <ShieldAlert size={14} className="text-amber-700" /> AI Paused · Shop Owner in Manual Control
+                  {activeConv?.takeover_reason && ` (${activeConv.takeover_reason})`}
                 </span>
                 <div className="h-px bg-[#E4E7EF] flex-1"></div>
               </div>
@@ -559,7 +599,6 @@ export default function InboxPage() {
 
           {/* Reply Bar & Optional Draft Review Box */}
           <div className="p-3.5 bg-white border-t border-slate-200">
-            {/* AI Draft Review Suggestion (TobSar & Enterprise AI Pattern) */}
             {aiMode === 'draft' && (
               <div className="mb-2.5 p-3 bg-blue-50/80 border border-blue-200/90 rounded-2xl flex items-start justify-between gap-3 shadow-xs animate-in slide-in-from-bottom-2">
                 <div className="space-y-1 min-w-0">
@@ -623,11 +662,11 @@ export default function InboxPage() {
         </div>
       )}
 
-      {/* 3. Right Column: AI Live Neural Telemetry */}
+      {/* 3. Right Column: CRM & Buyer Memory Telemetry */}
       <div className="hidden lg:flex w-80 bg-white border-l border-slate-200 flex-col shrink-0">
         <div className="h-16 border-b border-slate-200 flex items-center px-5 justify-between">
           <span className="text-xs font-extrabold uppercase tracking-wider text-[#0F172A] flex items-center gap-1.5">
-            <Sparkles size={13} className="text-[#1B38A6]" /> CRM &amp; AI Telemetry
+            <Sparkles size={13} className="text-[#1B38A6]" /> Long-Term Buyer Memory
           </span>
           <span className="text-[10px] font-bold bg-teal-50 text-[#00938C] px-2 py-0.5 rounded-full border border-teal-200">
             Real-Time
@@ -646,6 +685,18 @@ export default function InboxPage() {
                   <span className="font-extrabold text-[#0F172A]">{activeConv?.customer_name || "TikTok Buyer"}</span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Buyer Tier</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeConv?.buyer_tier === 'VIP' 
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                      : activeConv?.buyer_tier === 'RETURNING'
+                        ? 'bg-blue-100 text-[#1B38A6] border border-blue-200'
+                        : 'bg-slate-100 text-slate-700'
+                  }`}>
+                    {activeConv?.buyer_tier || "NEW"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-medium">Orders Placed</span>
                   <span className="font-bold text-[#1B38A6]">{activeConv?.customer_orders || 0} Orders</span>
                 </div>
@@ -653,18 +704,32 @@ export default function InboxPage() {
                   <span className="text-slate-500 font-medium">Lifetime Value</span>
                   <span className="font-bold text-emerald-700">${Number(activeConv?.customer_ltv || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Status</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    (activeConv?.customer_orders || 0) > 0 
-                      ? 'bg-amber-100 text-amber-800 border border-amber-200' 
-                      : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {(activeConv?.customer_orders || 0) > 0 ? 'VIP Regular Buyer' : 'New Customer'}
-                  </span>
-                </div>
+                {activeConv?.communication_style_notes && (
+                  <div className="pt-1 text-[11px] text-slate-600 bg-white p-2 rounded-xl border border-slate-200">
+                    <span className="font-bold text-slate-700 block mb-0.5">Communication Habits:</span>
+                    {activeConv.communication_style_notes}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Cultural Bargaining Tracker */}
+            {activeConv?.last_bargain_at && (
+              <div>
+                <h4 className="text-slate-400 uppercase tracking-wider text-[10px] font-extrabold mb-2">Bargaining Telemetry</h4>
+                <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-emerald-800 font-bold">Negotiated Price:</span>
+                    <span className="font-black text-emerald-700 text-sm">
+                      ${activeConv.bargain_offered_price ? Number(activeConv.bargain_offered_price).toFixed(2) : '15.00'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-emerald-700">
+                    Win-back cron scheduled if buyer stops responding for &gt;45 mins.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Extracted Cambodian Entities */}
             <div>
@@ -687,23 +752,7 @@ export default function InboxPage() {
               </div>
             </div>
 
-            {/* Deterministic Execution Checklist */}
-            <div>
-              <h4 className="text-slate-400 uppercase tracking-wider text-[10px] font-extrabold mb-2">Deterministic Safeguards</h4>
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-[11px]">
-                <div className="flex items-center gap-2 text-emerald-700 font-bold">
-                  <CheckCircle2 size={13} className="shrink-0" /> Multi-Tenant Vector RAG: Bounded
-                </div>
-                <div className="flex items-center gap-2 text-emerald-700 font-bold">
-                  <CheckCircle2 size={13} className="shrink-0" /> Multimodal Vision OCR: Active
-                </div>
-                <div className="flex items-center gap-2 text-[#00938C] font-bold">
-                  <CheckCircle2 size={13} className="shrink-0" /> Zero-Amnesia Memory: Connected
-                </div>
-              </div>
-            </div>
-
-            {/* Carrier Dispatch Readiness */}
+            {/* Fulfillment Readiness */}
             <div className="p-3.5 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border border-blue-200/80 space-y-2">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#1B38A6] block">
                 Fulfillment Readiness

@@ -31,11 +31,12 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     ]
   },
   {
-    title: "AI Brain & Catalog",
+    title: "AI Brain & Intelligence",
     items: [
-      { name: "AI Simulator",     href: "/dashboard/ai-setup",       icon: Sparkles },
+      { name: "AI Consultant & BI",href: "/dashboard/consultant",     icon: Bot, badge: "NEW" },
       { name: "Knowledge Base",   href: "/dashboard/knowledge-base", icon: BookOpen },
       { name: "Customer CRM",     href: "/dashboard/customers",      icon: Users },
+      { name: "AI Simulator",     href: "/dashboard/ai-setup",       icon: Sparkles },
     ]
   },
   {

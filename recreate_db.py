@@ -2,7 +2,10 @@ import asyncio
 from app.core.db import engine
 from app.models.base import Base
 from sqlalchemy import text
-from app.models import Seller, Shop, Product, User, Order, Customer, Conversation, Message, FAQ
+from app.models import (
+    Seller, Shop, Product, User, Order, Customer,
+    Conversation, Message, FAQ, SellerPersonaProfile, PaymentTransaction
+)
 import uuid
 import bcrypt
 
@@ -12,7 +15,7 @@ async def recreate():
         await conn.execute(text("CREATE SCHEMA public;"))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         await conn.run_sync(Base.metadata.create_all)
-        print("Database wiped and recreated with vector extension!")
+        print("Database wiped and recreated with all v2.0 tables + vector extension!")
         
         # Seed an admin user
         salt = bcrypt.gensalt()

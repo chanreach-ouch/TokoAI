@@ -1,127 +1,107 @@
 import os
-import google.generativeai as genai
 import json
+from google import genai
+from google.genai import types
 
-# Configure Gemini API Key
-# Usually done in main.py or startup, but doing here for simplicity
 api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
+client = genai.Client(api_key=api_key) if api_key else None
 
 def embed_text(text: str) -> list[float]:
     """
     Takes product text or user text and converts it to a 768-dimensional vector using text-embedding-004.
     """
-    if not api_key:
-        # Fallback dummy embedding if no key is present for testing
+    if not client:
         return [0.0] * 768
     
-    result = genai.embed_content(
-        model="models/embedding-001",
-        content=text,
-        task_type="retrieval_document"
-    )
-    return result['embedding']
+    try:
+        result = client.models.embed_content(
+            model="text-embedding-004",
+            contents=text,
+        )
+        return result.embeddings[0].values
+    except Exception:
+        return [0.0] * 768
 
 def embed_query(text: str) -> list[float]:
-    if not api_key:
-        return [0.0] * 768
-        
-    result = genai.embed_content(
-        model="models/embedding-001",
-        content=text,
-        task_type="retrieval_query"
-    )
-    return result['embedding']
+    return embed_text(text)
 
 def extract_vision_data(image_bytes: bytes, mime_type: str) -> dict:
     """
-    Uses Gemini 1.5 Flash to extract product information from an image.
-    Returns a dict with name, category, color, description.
+    Uses Gemini 2.5 Flash to extract product information from an image.
+    Returns a dict with name, category, color, description, and suggested retail price.
     """
-    if not api_key:
+    if not client:
         return {
-            "name": "Dummy Product from Vision",
+            "name": "Product from Vision",
             "category": "Apparel",
             "color": "Black",
-            "description": "Please add a GEMINI_API_KEY to your .env file to enable real vision extraction."
+            "description": "Please add a GEMINI_API_KEY to your .env file to enable real vision extraction.",
+            "price": 18.0,
+            "min_negotiation_price": 15.0
         }
 
-    model = genai.GenerativeModel('gemini-1.5-flash')
     prompt = """
-    Analyze this product image and extract the following details in JSON format.
-    Return ONLY a JSON object with these exact keys, no markdown wrappers:
+    Analyze this product image for a Cambodian TikTok / online retail shop and extract the following details in JSON format.
+    Return ONLY a valid JSON object matching these exact keys, no markdown:
     {
-        "name": "Short descriptive name",
-        "category": "Broad category like Clothing, Electronics, Cosmetics",
+        "name": "Short compelling English product name (e.g. 'Oversized Vintage Acid Wash Tee')",
+        "name_kh": "Natural Khmer product name (e.g. 'អាវយឺត Oversized ម៉ូដ Vintage ពេញនិយម')",
+        "category": "Broad category like Streetwear, Cosmetics, Footwear, Electronics",
         "color": "Primary color",
+        "price": 18.0,
+        "min_negotiation_price": 15.0,
         "description": "A 1-2 sentence compelling description for e-commerce."
     }
     """
     
     try:
-        response = model.generate_content([
-            {'mime_type': mime_type, 'data': image_bytes},
-            prompt
-        ])
-        # Clean potential markdown
-        text = response.text.strip().replace("```json", "").replace("```", "")
-        return json.loads(text)
+        part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[part, types.Part.from_text(text=prompt)],
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        return json.loads(response.text.strip())
     except Exception as e:
         print(f"Vision error: {e}")
-        return {}
+        return {
+            "name": "Vision Product",
+            "category": "General",
+            "color": "Standard",
+            "description": "Extracted via TokoAI Vision",
+            "price": 18.0,
+            "min_negotiation_price": 15.0
+        }
 
-def generate_chat_reply(customer_msg: str, seller_tone: str, faqs: list, matched_products: list, has_image: bool = False, image_bytes: bytes = None, image_mime: str = None) -> tuple[str, str]:
-    """
-    The core Multimodal RAG Chat Engine.
-    Returns (reply_text, image_url_if_needed).
-    """
-    if not api_key:
+def generate_chat_reply(customer_msg: str, seller_tone: str, faqs: list, matched_products: list, has_image: bool = False, image_bytes: bytes = None, image_mime: str = None) -> tuple[str, str | None]:
+    if not client:
         return ("Hi! Please set GEMINI_API_KEY in your .env to use the real AI.", None)
 
-    # 1. Build the System Prompt
-    system_prompt = f"""
-    You are an autonomous AI sales agent for a TikTok e-commerce store.
-    Your tone is: {seller_tone}
-    
-    STORE RULES (FAQs):
-    {faqs}
-    
-    TOP MATCHING PRODUCTS IN STOCK:
-    """
-    for p in matched_products:
-        system_prompt += f"- {p['name']} | Price: {p['price']} | Stock: {p['stock']} | ID: {p['id']}\n"
-        
-    system_prompt += """
-    INSTRUCTIONS:
-    1. Answer the customer's question directly based ONLY on the products and rules provided.
-    2. If they ask to buy something we have in stock, say you will generate a Bakong QR code.
-    3. If they sent an image, look at the matched products. If the best match is similar but you are NOT 100% certain it's identical, ask them: "Is this the item you are looking for?" and the system will attach the product image.
-    4. If we don't have it, politely say so. Do not invent products.
-    """
+    system_prompt = f"""You are an autonomous AI sales agent for a TikTok e-commerce store in Cambodia.
+Tone: {seller_tone}
 
-    model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_prompt)
-    
-    # 2. Add customer content (Text + Optional Image)
-    content = []
-    if has_image and image_bytes:
-        content.append({'mime_type': image_mime, 'data': image_bytes})
-    content.append(customer_msg)
-    
+STORE RULES:
+{faqs}
+
+TOP MATCHING PRODUCTS:
+"""
+    for p in matched_products:
+        system_prompt += f"- {p['name']} | Price: ${p['price']} | Stock: {p['stock']} | ID: {p['id']}\n"
+
     try:
-        response = model.generate_content(content)
-        
-        # 3. Simple heuristic to determine if we should send an image back
-        # Real implementation would use function calling or structured output,
-        # but for now we look for our exact trigger phrase.
-        reply_text = response.text
-        image_url = None
-        
-        if "Is this the item you are looking for" in reply_text and matched_products:
-            image_url = matched_products[0]['image_url']
-            
+        contents = []
+        if has_image and image_bytes:
+            contents.append(types.Part.from_bytes(data=image_bytes, mime_type=image_mime or "image/jpeg"))
+        contents.append(types.Part.from_text(text=customer_msg))
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=contents,
+            config=types.GenerateContentConfig(system_instruction=system_prompt)
+        )
+        reply_text = response.text or ""
+        image_url = matched_products[0]['image_url'] if matched_products and "is this the item" in reply_text.lower() else None
         return reply_text, image_url
-        
     except Exception as e:
         print(f"Chat error: {e}")
-        return ("Sorry, I'm having trouble processing that right now.", None)
+        return ("សុំទោសបង ពេលនេះប្រព័ន្ធ AI កំពុងរវល់បន្តិច សូមទាក់ទងមកម្ដងទៀតណា៎បង!", None)
